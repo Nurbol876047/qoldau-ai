@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Play, Sparkles, User, Brain, ArrowRight, ShieldCheck, Gamepad2, Activity } from "lucide-react";
+import { Play, Sparkles, User, Brain, ArrowRight, ShieldCheck, Gamepad2, Activity, Hand } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
@@ -79,6 +79,11 @@ export default function LandingPage() {
             <Link href="/speech-recognition" className="bg-white text-slate-800 p-6 rounded-3xl shadow-md hover:-translate-y-2 hover:shadow-xl transition-all flex flex-col items-center text-center gap-3 group border border-slate-200">
               <Brain className="w-12 h-12 text-purple-500 group-hover:scale-110 transition-transform" />
               <span className="font-bold text-xl">Сөйлеуді тану</span>
+            </Link>
+
+            <Link href="/gestures" className="bg-white text-slate-800 p-6 rounded-3xl shadow-md hover:-translate-y-2 hover:shadow-xl transition-all flex flex-col items-center text-center gap-3 group border border-slate-200 sm:col-span-2 lg:col-span-1">
+              <Hand className="w-12 h-12 text-pink-500 group-hover:scale-110 transition-transform" />
+              <span className="font-bold text-xl">Ым-ишарат тілі</span>
             </Link>
           </div>
         </motion.div>

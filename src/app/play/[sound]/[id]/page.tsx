@@ -11,13 +11,13 @@ const SOUND_DATA: Record<string, {
   buildWord: string;
   findWords: { text: string; has: boolean; emoji: string }[];
 }> = {
-  "Р": { repeatWord: "АРА", buildWord: "РАҚМЕТ", findWords: [ { text: "АЛМА", has: false, emoji: "🍎" }, { text: "ҚАРБЫЗ", has: true, emoji: "🍉" }, { text: "КІТАП", has: false, emoji: "📚" } ] },
-  "Л": { repeatWord: "АЛМА", buildWord: "ЛАҚ", findWords: [ { text: "КҮН", has: false, emoji: "☀️" }, { text: "ГҮЛ", has: true, emoji: "🌸" }, { text: "АҒАШ", has: false, emoji: "🌳" } ] },
-  "Ш": { repeatWord: "ШАР", buildWord: "АҒАШ", findWords: [ { text: "МЫСЫҚ", has: false, emoji: "🐱" }, { text: "ШАШ", has: true, emoji: "💇‍♀️" }, { text: "ИТ", has: false, emoji: "🐶" } ] },
-  "Ж": { repeatWord: "ЖОЛ", buildWord: "ЖАПЫРАҚ", findWords: [ { text: "СУ", has: false, emoji: "💧" }, { text: "ЖЫЛАН", has: true, emoji: "🐍" }, { text: "ОТ", has: false, emoji: "🔥" } ] },
+  "Р": { repeatWord: "РАУШАН", buildWord: "РАҚМЕТ", findWords: [ { text: "АЛМА", has: false, emoji: "🍎" }, { text: "РОБОТ", has: true, emoji: "🤖" }, { text: "КІТАП", has: false, emoji: "📚" } ] },
+  "Л": { repeatWord: "ЛАҚ", buildWord: "ЛАШЫН", findWords: [ { text: "КҮН", has: false, emoji: "☀️" }, { text: "ЛАГЕРЬ", has: true, emoji: "⛺" }, { text: "АҒАШ", has: false, emoji: "🌳" } ] },
+  "Ш": { repeatWord: "ШАР", buildWord: "ШАНА", findWords: [ { text: "МЫСЫҚ", has: false, emoji: "🐱" }, { text: "ШАШ", has: true, emoji: "💇‍♀️" }, { text: "ИТ", has: false, emoji: "🐶" } ] },
+  "Ж": { repeatWord: "ЖОЛ", buildWord: "ЖУСАН", findWords: [ { text: "СУ", has: false, emoji: "💧" }, { text: "ЖЫЛАН", has: true, emoji: "🐍" }, { text: "ОТ", has: false, emoji: "🔥" } ] },
   "С": { repeatWord: "СУ", buildWord: "САҒАТ", findWords: [ { text: "ТАУ", has: false, emoji: "⛰️" }, { text: "САН", has: true, emoji: "🔢" }, { text: "АЙ", has: false, emoji: "🌙" } ] },
   "Қ": { repeatWord: "ҚАЗ", buildWord: "ҚАЛАМ", findWords: [ { text: "ШӨП", has: false, emoji: "🌿" }, { text: "ҚОЙ", has: true, emoji: "🐑" }, { text: "ГҮЛ", has: false, emoji: "🌸" } ] },
-  "Ғ": { repeatWord: "ҒАРЫШ", buildWord: "ШАҒАЛА", findWords: [ { text: "ТАСТАБАҚ", has: false, emoji: "🍽️" }, { text: "БАҒДАРШАМ", has: true, emoji: "🚦" }, { text: "ОҚУШЫ", has: false, emoji: "👨‍🎓" } ] },
+  "Ғ": { repeatWord: "ҒАРЫШ", buildWord: "ҒАЛЫМ", findWords: [ { text: "ТАСТАБАҚ", has: false, emoji: "🍽️" }, { text: "БАҒДАРШАМ", has: true, emoji: "🚦" }, { text: "ОҚУШЫ", has: false, emoji: "👨‍🎓" } ] },
   "Ң": { repeatWord: "ШАҢ", buildWord: "ЖАҢҒАҚ", findWords: [ { text: "КӨЗ", has: false, emoji: "👁️" }, { text: "ШАҢҒЫ", has: true, emoji: "🎿" }, { text: "ҚОЛ", has: false, emoji: "✋" } ] }
 };
 
