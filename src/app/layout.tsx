@@ -5,7 +5,7 @@ import React from "react";
 
 const fontOutfit = Outfit({
   variable: "--font-outfit",
-  subsets: ["latin", "cyrillic"],
+  subsets: ["latin"],
 });
 
 const fontInter = Inter({

@@ -55,7 +55,7 @@ function ArticulationModel({ mode, category }: { mode: "ideal" | "actual", categ
           wireframe={mode === "actual"}
         />
       </Sphere>
-      <OrbitControls enableZoom={false} autoRotate speed={0.5} />
+      <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={0.5} />
     </>
   );
 }
@@ -114,27 +114,12 @@ export default function SpeechRecognitionPage() {
     }
   };
 
-  const getAudioFloat32 = async (blob: Blob): Promise<Float32Array> => {
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const arrayBuffer = await blob.arrayBuffer();
-    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-    const offlineCtx = new OfflineAudioContext(1, audioBuffer.duration * 16000, 16000);
-    const source = offlineCtx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(offlineCtx.destination);
-    source.start();
-    const resampled = await offlineCtx.startRendering();
-    return resampled.getChannelData(0);
-  };
-
   const analyzeAudio = async () => {
     try {
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      const pcmFloat32 = await getAudioFloat32(audioBlob);
-      const pcmBlob = new Blob([pcmFloat32.buffer], { type: 'application/octet-stream' });
       
       const formData = new FormData();
-      formData.append("audioPCM", pcmBlob);
+      formData.append("audio", audioBlob);
       formData.append("targetWord", currentWord.word);
       formData.append("lang", lang);
 
