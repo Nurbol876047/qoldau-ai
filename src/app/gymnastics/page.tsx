@@ -72,7 +72,7 @@ export default function GymnasticsPage() {
           modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
           delegate: "GPU"
         },
-        outputFaceBlendshapes: false,
+        outputFaceBlendshapes: true,
         runningMode: "VIDEO",
         numFaces: 1
       });
@@ -98,7 +98,7 @@ export default function GymnasticsPage() {
       
       if (results.faceLandmarks && results.faceLandmarks.length > 0) {
         drawLandmarks(results.faceLandmarks[0]);
-        checkExercise(results.faceLandmarks[0]);
+        checkExercise(results.faceBlendshapes ? results.faceBlendshapes[0] : null);
       } else {
         setFeedback("idle");
       }
@@ -132,35 +132,34 @@ export default function GymnasticsPage() {
     });
   };
 
-  const checkExercise = (landmarks: any[]) => {
+  const checkExercise = (blendshapes: any) => {
+    if (!blendshapes || !blendshapes.categories) return;
+
     const target = EXERCISES[currentExIndex].target;
-    
-    // Key points
-    const leftLip = landmarks[61];
-    const rightLip = landmarks[291];
-    const topLip = landmarks[13];
-    const bottomLip = landmarks[14];
-    
-    const leftEye = landmarks[33];
-    const rightEye = landmarks[263];
-
-    // Distances (using 3D Euclidean distance for robustness against head rotation)
-    const distance3D = (p1: any, p2: any) => Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2) + Math.pow(p1.z - p2.z, 2));
-    
-    const faceWidth = distance3D(rightEye, leftEye);
-    const mouthWidth = distance3D(rightLip, leftLip);
-    const mouthOpen = distance3D(bottomLip, topLip);
-
-    const widthRatio = mouthWidth / faceWidth;
-    const openRatio = mouthOpen / faceWidth;
-
     let isSuccess = false;
 
-    // Smile: mouth is wide (and possibly showing teeth so openRatio > 0)
-    // A neutral mouth width ratio is typically 0.28-0.30. For a smile it goes > 0.33.
-    if (target === "smile" && widthRatio > 0.33) isSuccess = true;
-    if (target === "pucker" && widthRatio < 0.28) isSuccess = true;
-    if (target === "open" && openRatio > 0.12) isSuccess = true;
+    // Helper to get score from blendshapes array
+    const getScore = (name: string) => {
+      const cat = blendshapes.categories.find((c: any) => c.categoryName === name);
+      return cat ? cat.score : 0;
+    };
+
+    // Blendshape scores go from 0.0 to 1.0. 
+    // Usually > 0.4 is a very clear expression.
+    if (target === "smile") {
+      const smileL = getScore("mouthSmileLeft");
+      const smileR = getScore("mouthSmileRight");
+      // Егер сәл ғана жымиса да қабылдаймыз (0.35)
+      if (smileL > 0.35 || smileR > 0.35) isSuccess = true;
+    } 
+    else if (target === "pucker") {
+      const pucker = getScore("mouthPucker");
+      if (pucker > 0.4) isSuccess = true;
+    } 
+    else if (target === "open") {
+      const jawOpen = getScore("jawOpen");
+      if (jawOpen > 0.3) isSuccess = true;
+    }
 
     if (isSuccess) {
       setFeedback("correct");
