@@ -24,17 +24,7 @@ export default function LandingPage() {
             </span>
           </div>
 
-          <div className="hidden md:flex items-center gap-8 font-medium">
-            <a href="#features" className="hover:text-primary transition-colors">Платформа туралы</a>
-            <a href="#demo" className="hover:text-primary transition-colors">Қалай жұмыс істейді</a>
-            <a href="#therapists" className="hover:text-primary transition-colors">Логопедтерге</a>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button className="px-6 py-2.5 rounded-full bg-primary text-white font-semibold shadow-lg shadow-primary/30 hover:bg-primary-hover hover:scale-105 transition-all">
-              Кіру
-            </button>
-          </div>
+          {/* Removed navigation links and login button as requested */}
         </div>
       </header>
 
