@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+:root {
+  --background: #F3F6F8; /* Полубелый / светло-серый фон */
+  --foreground: #0F172A; /* Черные надписи */
+  
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  
+  --secondary: #F59E0B;
+  --secondary-hover: #D97706;
+  
+  --success: #10B981;
+  --success-hover: #059669;
+
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.2); /* Темная рамка, чтобы не сливалось с фоном */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-secondary-hover: var(--secondary-hover);
+  --color-success: var(--success);
+  --color-success-hover: var(--success-hover);
+  --font-sans: var(--font-outfit);
+  --font-inter: var(--font-inter);
+}
+
+@theme {
+  --variant-dark: (&:where(.dark, .dark *));
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-outfit), sans-serif;
+  overflow-x: hidden;
+}
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
