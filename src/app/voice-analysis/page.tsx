@@ -209,7 +209,8 @@ export default function VoiceAnalysisPage() {
       });
 
       if (!res.ok) {
-        throw new Error("API responded with an error");
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "API responded with an error");
       }
 
       const data = await res.json();
@@ -220,10 +221,10 @@ export default function VoiceAnalysisPage() {
         accuracy: data.accuracy,
       });
       setStatus("result");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       setStatus("error");
-      setErrorMsg("Қате пайда болды. Сервер қолжетімсіз. / Ошибка соединения.");
+      setErrorMsg(err.message || "Қате пайда болды. Сервер қолжетімсіз. / Ошибка соединения.");
     }
   };
 

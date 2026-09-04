@@ -57,8 +57,8 @@ export async function POST(request: Request) {
       isCorrect: data.isCorrect,
       accuracy: data.accuracy
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Gemini STT API Error:', error);
-    return NextResponse.json({ error: 'Failed to analyze audio' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to analyze audio' }, { status: 500 });
   }
 }
