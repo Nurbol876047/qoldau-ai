@@ -73,7 +73,7 @@ export default function PlayPage() {
                 className={`aspect-square rounded-2xl text-2xl font-bold flex items-center justify-center transition-all ${
                   selectedSound === sound 
                   ? "bg-primary text-white shadow-lg shadow-primary/30 scale-105"
-                  : "glass hover:bg-primary/10 text-slate-700 dark:text-slate-200"
+                  : "bg-transparent border-2 border-slate-200/60 text-slate-400 hover:border-primary/50 hover:text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-slate-500"
                 }`}
               >
                 {sound}
