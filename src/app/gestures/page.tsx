@@ -29,7 +29,7 @@ export default function GesturesPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [lastSpoken, setLastSpoken] = useState<string>("None");
 
-  const requestRef = useRef<number>();
+  const requestRef = useRef<number>(0);
 
   // Architecture for Nurgul Neuro TTS (Connected to our Edge TTS Backend)
   const playTTS = async (text: string) => {
