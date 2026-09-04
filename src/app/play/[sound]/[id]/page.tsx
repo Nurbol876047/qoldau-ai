@@ -6,8 +6,23 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Mic } from "lucide-react";
 import { motion } from "framer-motion";
 
+const SOUND_DATA: Record<string, {
+  repeatWord: string;
+  buildWord: string;
+  findWords: { text: string; has: boolean; emoji: string }[];
+}> = {
+  "Р": { repeatWord: "АРА", buildWord: "РАҚМЕТ", findWords: [ { text: "АЛМА", has: false, emoji: "🍎" }, { text: "ҚАРБЫЗ", has: true, emoji: "🍉" }, { text: "КІТАП", has: false, emoji: "📚" } ] },
+  "Л": { repeatWord: "АЛМА", buildWord: "ЛАҚ", findWords: [ { text: "КҮН", has: false, emoji: "☀️" }, { text: "ГҮЛ", has: true, emoji: "🌸" }, { text: "АҒАШ", has: false, emoji: "🌳" } ] },
+  "Ш": { repeatWord: "ШАР", buildWord: "АҒАШ", findWords: [ { text: "МЫСЫҚ", has: false, emoji: "🐱" }, { text: "ШАШ", has: true, emoji: "💇‍♀️" }, { text: "ИТ", has: false, emoji: "🐶" } ] },
+  "Ж": { repeatWord: "ЖОЛ", buildWord: "ЖАПЫРАҚ", findWords: [ { text: "СУ", has: false, emoji: "💧" }, { text: "ЖЫЛАН", has: true, emoji: "🐍" }, { text: "ОТ", has: false, emoji: "🔥" } ] },
+  "С": { repeatWord: "СУ", buildWord: "САҒАТ", findWords: [ { text: "ТАУ", has: false, emoji: "⛰️" }, { text: "САН", has: true, emoji: "🔢" }, { text: "АЙ", has: false, emoji: "🌙" } ] },
+  "Қ": { repeatWord: "ҚАЗ", buildWord: "ҚАЛАМ", findWords: [ { text: "ШӨП", has: false, emoji: "🌿" }, { text: "ҚОЙ", has: true, emoji: "🐑" }, { text: "ГҮЛ", has: false, emoji: "🌸" } ] },
+  "Ғ": { repeatWord: "ҒАРЫШ", buildWord: "ШАҒАЛА", findWords: [ { text: "ТАСТАБАҚ", has: false, emoji: "🍽️" }, { text: "БАҒДАРШАМ", has: true, emoji: "🚦" }, { text: "ОҚУШЫ", has: false, emoji: "👨‍🎓" } ] },
+  "Ң": { repeatWord: "ШАҢ", buildWord: "ЖАҢҒАҚ", findWords: [ { text: "КӨЗ", has: false, emoji: "👁️" }, { text: "ШАҢҒЫ", has: true, emoji: "🎿" }, { text: "ҚОЛ", has: false, emoji: "✋" } ] }
+};
+
 // Game 1: Repeat Word
-function RepeatWordGame({ sound, onComplete }: { sound: string, onComplete: () => void }) {
+function RepeatWordGame({ sound, targetWord, onComplete }: { sound: string, targetWord: string, onComplete: () => void }) {
   const [status, setStatus] = useState<"idle" | "recording" | "analyzing" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   
@@ -46,26 +61,13 @@ function RepeatWordGame({ sound, onComplete }: { sound: string, onComplete: () =
     }
   };
 
-  const getAudioFloat32 = async (blob: Blob): Promise<Float32Array> => {
-    const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const arrayBuffer = await blob.arrayBuffer();
-    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-    const offlineCtx = new OfflineAudioContext(1, audioBuffer.duration * 16000, 16000);
-    const source = offlineCtx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(offlineCtx.destination);
-    source.start();
-    const resampled = await offlineCtx.startRendering();
-    return resampled.getChannelData(0);
-  };
-
   const analyzeAudio = async () => {
     try {
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
       
       const formData = new FormData();
       formData.append("audio", audioBlob);
-      formData.append("targetWord", "АРА");
+      formData.append("targetWord", targetWord);
       formData.append("lang", "KZ");
 
       const res = await fetch("/api/analyze-voice", { method: "POST", body: formData });
@@ -73,7 +75,6 @@ function RepeatWordGame({ sound, onComplete }: { sound: string, onComplete: () =
 
       const data = await res.json();
       
-      // If accuracy is good enough, success!
       if (data.accuracy > 50) {
         setStatus("success");
       } else {
@@ -90,7 +91,7 @@ function RepeatWordGame({ sound, onComplete }: { sound: string, onComplete: () =
   return (
     <div className="flex flex-col items-center gap-6">
       <h2 className="text-2xl font-bold text-slate-800">Осы сөзді қайтала:</h2>
-      <div className="text-7xl font-extrabold text-blue-600 mb-4 tracking-widest">АРА</div>
+      <div className="text-7xl font-extrabold text-blue-600 mb-4 tracking-widest">{targetWord}</div>
       
       {status === "error" && (
         <div className="text-red-500 font-medium mb-2 px-4 py-2 bg-red-50 rounded-lg border border-red-200 text-center max-w-sm">
@@ -135,19 +136,25 @@ function RepeatWordGame({ sound, onComplete }: { sound: string, onComplete: () =
 }
 
 // Game 2: Build Word
-function BuildWordGame({ sound, onComplete }: { sound: string, onComplete: () => void }) {
-  const targetWord = "РАҚМЕТ";
-  const scrambled = ["Қ", "Р", "Т", "А", "М", "Е"];
-  const [selected, setSelected] = useState<string[]>([]);
+function BuildWordGame({ sound, targetWord, onComplete }: { sound: string, targetWord: string, onComplete: () => void }) {
+  const [scrambled, setScrambled] = useState<{char: string, id: number}[]>([]);
+  const [selected, setSelected] = useState<{char: string, id: number}[]>([]);
   const [shake, setShake] = useState(false);
   
-  const handleSelect = (letter: string) => {
-    setSelected([...selected, letter]);
+  useEffect(() => {
+    const letters = targetWord.split('').map((char, index) => ({ char, id: index }));
+    const shuffled = [...letters].sort(() => Math.random() - 0.5);
+    setScrambled(shuffled);
+    setSelected([]);
+  }, [targetWord]);
+
+  const handleSelect = (item: {char: string, id: number}) => {
+    setSelected([...selected, item]);
   };
 
   useEffect(() => {
-    if (selected.length === targetWord.length) {
-      if (selected.join('') === targetWord) {
+    if (selected.length === targetWord.length && selected.length > 0) {
+      if (selected.map(s => s.char).join('') === targetWord) {
         setTimeout(onComplete, 1500);
       } else {
         setShake(true);
@@ -157,7 +164,7 @@ function BuildWordGame({ sound, onComplete }: { sound: string, onComplete: () =>
         }, 1000);
       }
     }
-  }, [selected]);
+  }, [selected, targetWord, onComplete]);
 
   return (
     <div className="flex flex-col items-center gap-8 w-full">
@@ -165,28 +172,28 @@ function BuildWordGame({ sound, onComplete }: { sound: string, onComplete: () =>
       <div className={`flex gap-3 mb-8 min-h-[90px] p-4 bg-slate-50 rounded-2xl border border-slate-200 ${shake ? 'animate-bounce' : ''}`}>
         {targetWord.split('').map((_, i) => (
           <div key={i} className="w-16 h-16 border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center text-4xl font-black text-orange-500 bg-white shadow-sm">
-            {selected[i] || ""}
+            {selected[i]?.char || ""}
           </div>
         ))}
       </div>
       
       <div className="flex gap-4 flex-wrap justify-center max-w-lg">
-        {scrambled.map((letter, i) => {
-          const isSelected = selected.includes(letter) && selected.filter(l => l === letter).length >= scrambled.filter(l => l === letter).length;
+        {scrambled.map((item) => {
+          const isSelected = selected.some(s => s.id === item.id);
           return (
             <button 
-              key={i}
-              onClick={() => handleSelect(letter)}
+              key={item.id}
+              onClick={() => handleSelect(item)}
               disabled={isSelected}
               className={`w-20 h-20 rounded-2xl text-4xl font-bold shadow-md transition-all border
                 ${isSelected ? "opacity-0 scale-50" : "bg-white text-slate-800 hover:scale-110 hover:bg-orange-50 hover:text-orange-600 border-slate-200 hover:border-orange-300"}`}
             >
-              {letter}
+              {item.char}
             </button>
           )
         })}
       </div>
-      {selected.join('') === targetWord && (
+      {selected.length === targetWord.length && selected.map(s => s.char).join('') === targetWord && (
          <div className="text-emerald-500 font-bold text-2xl mt-4 flex items-center gap-2">
            <CheckCircle2 className="w-8 h-8" /> Керемет құрастырдың!
          </div>
@@ -198,7 +205,7 @@ function BuildWordGame({ sound, onComplete }: { sound: string, onComplete: () =>
 // Game 3: Pop bubbles
 function BubblesGame({ sound, onComplete }: { sound: string, onComplete: () => void }) {
   const [score, setScore] = useState(0);
-  const bubbles = ["Р", "Л", "Ш", "Р", "С", "Р", "Ж"];
+  const bubbles = [sound, "О", "А", sound, "У", sound, "Е", "Ы", sound];
   const [popped, setPopped] = useState<number[]>([]);
 
   const handlePop = (letter: string, idx: number) => {
@@ -210,14 +217,14 @@ function BubblesGame({ sound, onComplete }: { sound: string, onComplete: () => v
   };
 
   useEffect(() => {
-    if (score === 3) setTimeout(onComplete, 1500);
-  }, [score]);
+    if (score === 4) setTimeout(onComplete, 1500);
+  }, [score, onComplete]);
 
   return (
     <div className="flex flex-col items-center gap-6 w-full relative h-[450px]">
       <h2 className="text-2xl font-bold text-slate-800">«{sound}» әрпі бар көпіршіктерді жар!</h2>
       <div className="bg-blue-100 text-blue-700 px-6 py-2 rounded-full font-bold text-xl shadow-sm border border-blue-200">
-        Ұпай: {score} / 3
+        Ұпай: {score} / 4
       </div>
       
       <div className="absolute inset-0 top-24 overflow-hidden rounded-3xl bg-blue-50/50 border border-blue-100">
@@ -241,7 +248,7 @@ function BubblesGame({ sound, onComplete }: { sound: string, onComplete: () => v
           )
         })}
       </div>
-      {score === 3 && (
+      {score === 4 && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm p-8 rounded-3xl shadow-2xl flex flex-col items-center border border-emerald-100 z-10 text-center">
           <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-4" />
           <h3 className="text-2xl font-bold text-slate-800">Барлық көпіршікті жардың!</h3>
@@ -252,13 +259,7 @@ function BubblesGame({ sound, onComplete }: { sound: string, onComplete: () => v
 }
 
 // Game 4: Find sound
-function FindSoundGame({ sound, onComplete }: { sound: string, onComplete: () => void }) {
-  const words = [
-    { text: "АЛМА", has: false, emoji: "🍎" },
-    { text: "ҚАРБЫЗ", has: true, emoji: "🍉" },
-    { text: "КІТАП", has: false, emoji: "📚" }
-  ];
-  
+function FindSoundGame({ sound, words, onComplete }: { sound: string, words: {text: string, has: boolean, emoji: string}[], onComplete: () => void }) {
   const [done, setDone] = useState(false);
   const [wrongIdx, setWrongIdx] = useState<number | null>(null);
 
@@ -304,8 +305,10 @@ export default function GamePage() {
   const params = useParams();
   const router = useRouter();
   
-  const sound = decodeURIComponent(params.sound as string);
+  const sound = decodeURIComponent(params.sound as string).toUpperCase();
   const id = params.id as string;
+
+  const data = SOUND_DATA[sound] || SOUND_DATA["Р"];
 
   const handleComplete = () => {
     const progress = JSON.parse(localStorage.getItem('playProgress_v2') || '{}');
@@ -329,10 +332,10 @@ export default function GamePage() {
 
       <main className="flex-1 max-w-5xl w-full mx-auto flex items-center justify-center relative z-10">
         <div className="bg-white w-full rounded-[3rem] p-12 shadow-2xl border border-slate-200 min-h-[600px] flex flex-col items-center justify-center">
-           {id === 'ex-1' && <RepeatWordGame sound={sound} onComplete={handleComplete} />}
-           {id === 'ex-2' && <BuildWordGame sound={sound} onComplete={handleComplete} />}
+           {id === 'ex-1' && <RepeatWordGame sound={sound} targetWord={data.repeatWord} onComplete={handleComplete} />}
+           {id === 'ex-2' && <BuildWordGame sound={sound} targetWord={data.buildWord} onComplete={handleComplete} />}
            {id === 'ex-3' && <BubblesGame sound={sound} onComplete={handleComplete} />}
-           {id === 'ex-4' && <FindSoundGame sound={sound} onComplete={handleComplete} />}
+           {id === 'ex-4' && <FindSoundGame sound={sound} words={data.findWords} onComplete={handleComplete} />}
         </div>
       </main>
     </div>
