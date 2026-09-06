@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mic, Loader2, Volume2, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import PageShell from "@/components/PageShell";
+import GlassCard from "@/components/GlassCard";
 
 type ChatMessage = {
   id: string;
@@ -184,25 +186,25 @@ export default function SpeechRecognitionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col p-6">
-      <header className="flex items-center justify-between mb-8">
-        <Link href="/" className="p-3 rounded-full bg-white border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2 font-medium shadow-sm">
-          <ArrowLeft className="w-5 h-5 text-slate-800" />
-          <span className="text-slate-800">Артқа</span>
+    <PageShell theme="light" className="p-6">
+      <header className="flex items-center justify-between mb-8 relative z-10">
+        <Link href="/" className="btn-ghost">
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+          <span>Артқа</span>
         </Link>
-        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-          <MessageSquare className="w-6 h-6 text-purple-500" />
+        <h1 className="heading-lg text-2xl flex items-center gap-2">
+          <MessageSquare className="w-6 h-6 text-ai-purple" />
           Ақылды Көмекші
         </h1>
-        <div className="w-24" /> {/* Spacer */}
+        <div className="w-24" />
       </header>
 
-      <main className="flex-1 max-w-3xl mx-auto w-full flex flex-col gap-6">
+      <main className="flex-1 max-w-3xl mx-auto w-full relative z-10 flex flex-col gap-6">
         
         {/* Chat History */}
-        <div className="flex-1 bg-white rounded-[2rem] border border-slate-200 shadow-xl p-6 overflow-y-auto min-h-[400px] flex flex-col gap-4">
+        <GlassCard strong className="flex-1 p-6 overflow-y-auto min-h-[400px] flex flex-col gap-4">
           {messages.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 gap-4">
+            <div className="flex-1 flex flex-col items-center justify-center text-muted gap-4">
               <Mic className="w-16 h-16 opacity-50" />
               <p className="text-lg font-medium text-center max-w-xs">
                 Сөйлесуді бастау үшін төмендегі микрофонды басыңыз.
@@ -217,10 +219,10 @@ export default function SpeechRecognitionPage() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   className={`flex w-full ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  <div className={`max-w-[80%] p-4 rounded-3xl ${
+                  <div className={`max-w-[80%] p-4 ${
                     msg.role === "user" 
-                      ? "bg-blue-500 text-white rounded-tr-sm" 
-                      : "bg-slate-100 text-slate-800 rounded-tl-sm"
+                      ? "chat-bubble-user" 
+                      : "chat-bubble-assistant"
                   }`}>
                     <p className="text-lg font-medium leading-relaxed">{msg.text}</p>
                   </div>
@@ -235,55 +237,54 @@ export default function SpeechRecognitionPage() {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               className="flex justify-start w-full"
             >
-              <div className="max-w-[80%] p-4 rounded-3xl bg-slate-50 text-slate-500 rounded-tl-sm border border-slate-200 flex items-center gap-3">
+              <div className="max-w-[80%] p-4 rounded-3xl glass text-muted rounded-tl-sm flex items-center gap-3">
                 {status === "listening" && (
                   <>
-                    <div className="w-4 h-4 rounded-full bg-red-500 animate-pulse" />
+                    <div className="w-4 h-4 rounded-full bg-error animate-pulse" />
                     <span>Сізді тыңдап тұрмын... (2 сек. үнсіздік болғанда тоқтайды)</span>
                   </>
                 )}
                 {status === "stt" && (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                    <Loader2 className="w-5 h-5 animate-spin text-accent" />
                     <span>Сөзіңізді мәтінге айналдыруда (STT)...</span>
                   </>
                 )}
                 {status === "thinking" && (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+                    <Loader2 className="w-5 h-5 animate-spin text-ai-purple" />
                     <span>Жауап ойлап жатырмын (LLM)...</span>
                   </>
                 )}
                 {status === "tts" && (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin text-emerald-500" />
+                    <Loader2 className="w-5 h-5 animate-spin text-success" />
                     <span>Жауапты дыбысқа айналдыруда (TTS)...</span>
                   </>
                 )}
                 {status === "speaking" && (
                   <>
-                    <Volume2 className="w-5 h-5 text-emerald-500 animate-pulse" />
+                    <Volume2 className="w-5 h-5 text-success animate-pulse" />
                     <span>Сөйлеп жатыр...</span>
                   </>
                 )}
               </div>
             </motion.div>
           )}
-        </div>
+        </GlassCard>
 
         {/* Controls */}
         <div className="flex flex-col items-center gap-4 py-4">
           {errorMsg && (
-            <div className="text-red-500 font-medium px-4 py-2 bg-red-50 rounded-lg border border-red-200">
+            <div className="banner-error font-medium px-4 py-2">
               {errorMsg}
             </div>
           )}
 
           <div className="relative">
-            {/* Volume rings for active listening */}
             {status === "listening" && (
               <div 
-                className="absolute inset-0 bg-blue-400 rounded-full opacity-20"
+                className="absolute inset-0 bg-accent rounded-full opacity-20"
                 style={{ transform: `scale(${1 + volume / 50})`, transition: 'transform 0.1s' }}
               />
             )}
@@ -293,10 +294,10 @@ export default function SpeechRecognitionPage() {
               disabled={status !== "idle" && status !== "listening"}
               className={`relative z-10 w-24 h-24 rounded-full flex items-center justify-center text-white shadow-xl transition-all
                 ${status === "listening" 
-                  ? "bg-red-500 hover:bg-red-600 animate-pulse scale-110" 
+                  ? "bg-error hover:bg-error animate-pulse scale-110" 
                   : status !== "idle"
-                    ? "bg-slate-300 cursor-not-allowed"
-                    : "bg-blue-500 hover:bg-blue-600 hover:scale-105"
+                    ? "bg-white/20 cursor-not-allowed"
+                    : "bg-gradient-to-br from-accent to-accent-hover hover:scale-105 shadow-accent/30"
                 }
               `}
             >
@@ -308,12 +309,12 @@ export default function SpeechRecognitionPage() {
             </button>
           </div>
           
-          <p className="text-slate-500 font-medium h-6">
+          <p className="text-muted font-medium h-6">
             {status === "idle" && "Сөйлеу үшін микрофонды басыңыз"}
             {status === "listening" && "Тыңдауда... (тоқтату үшін қайта басыңыз)"}
           </p>
         </div>
       </main>
-    </div>
+    </PageShell>
   );
 }

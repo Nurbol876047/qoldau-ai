@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, Camera, CheckCircle2, RotateCw, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FilesetResolver, FaceLandmarker } from "@mediapipe/tasks-vision";
+import PageShell from "@/components/PageShell";
+import GlassCard from "@/components/GlassCard";
 
 interface Exercise {
   id: number;
@@ -120,7 +122,7 @@ export default function GymnasticsPage() {
 
     // Draw only mouth landmarks
     const mouthIndices = [61, 291, 13, 14, 0, 17, 78, 308];
-    ctx.fillStyle = "#10B981"; // emerald
+    ctx.fillStyle = "#22c55e";
     
     mouthIndices.forEach(idx => {
       const pt = landmarks[idx];
@@ -190,33 +192,31 @@ export default function GymnasticsPage() {
   const currentExercise = EXERCISES[currentExIndex];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col p-6 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-slate-900 dark:to-emerald-950 -z-10" />
-      
-      <header className="flex items-center justify-between mb-8">
-        <Link href="/" className="p-3 rounded-full glass hover:bg-white/50 transition-colors flex items-center gap-2 font-medium">
-          <ArrowLeft className="w-5 h-5 text-emerald-600" />
-          <span className="text-emerald-700">Артқа</span>
+    <PageShell theme="dark" className="p-6">
+      <header className="flex items-center justify-between mb-8 relative z-10">
+        <Link href="/" className="btn-ghost">
+          <ArrowLeft className="w-5 h-5 text-success" />
+          <span className="text-success">Артқа</span>
         </Link>
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-emerald-800 dark:text-emerald-400">AR Гимнастика</h1>
-          <p className="text-emerald-600 font-medium">
+          <h1 className="heading-lg text-2xl text-success">AR Гимнастика</h1>
+          <p className="text-success/70 font-medium">
             Жаттығу {currentExIndex + 1} / {EXERCISES.length}
           </p>
         </div>
-        <div className="w-24"></div> {/* spacer for centering */}
+        <div className="w-24"></div>
       </header>
 
-      <main className="flex-1 w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <main className="flex-1 w-full max-w-6xl mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Camera Feed */}
-        <div className="glass rounded-3xl p-6 flex flex-col items-center justify-center relative overflow-hidden min-h-[500px] border-emerald-500/30 border-2 shadow-xl shadow-emerald-500/20">
+        <GlassCard strong className="p-6 flex flex-col items-center justify-center relative overflow-hidden min-h-[500px] border-success/20 shadow-success/10">
           
           {!isTracking && hasPermission !== false && (
             <div className="text-center">
-              <Camera className="w-20 h-20 text-emerald-300 mx-auto mb-4" />
+              <Camera className="w-20 h-20 text-success/40 mx-auto mb-4" />
               <button 
                 onClick={initCameraAndModel}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-4 rounded-full font-bold text-xl transition-all shadow-lg shadow-emerald-500/40"
+                className="btn-primary px-8 py-4 text-xl rounded-full"
               >
                 Камераны қосу
               </button>
@@ -225,13 +225,13 @@ export default function GymnasticsPage() {
 
           {hasPermission === false && (
             <div className="text-center p-8">
-              <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-              <p className="text-lg font-medium text-slate-700 dark:text-slate-200 mb-6">
+              <AlertCircle className="w-16 h-16 text-error mx-auto mb-4" />
+              <p className="text-lg font-medium text-foreground mb-6">
                 {errorMsg}
               </p>
               <button 
                 onClick={initCameraAndModel}
-                className="bg-secondary hover:bg-secondary-hover text-white px-8 py-3 rounded-full font-bold transition-all shadow-lg"
+                className="btn-secondary px-8 py-3 rounded-full"
               >
                 Қайта көру
               </button>
@@ -259,7 +259,7 @@ export default function GymnasticsPage() {
                   initial={{ opacity: 0, scale: 0.8, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-8 py-3 rounded-full font-bold text-2xl flex items-center gap-3 shadow-2xl z-20"
+                  className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-success text-white px-8 py-3 rounded-full font-bold text-2xl flex items-center gap-3 shadow-2xl shadow-success/40 z-20"
                 >
                   <CheckCircle2 className="w-8 h-8" />
                   Дұрыс! ✅
@@ -270,7 +270,7 @@ export default function GymnasticsPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-8 py-3 rounded-full font-bold text-xl flex items-center gap-3 shadow-2xl z-20"
+                  className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-warning text-white px-8 py-3 rounded-full font-bold text-xl flex items-center gap-3 shadow-2xl z-20"
                 >
                   <RotateCw className="w-6 h-6 animate-spin" />
                   Қайталап көрейік...
@@ -280,26 +280,26 @@ export default function GymnasticsPage() {
             
             {/* Progress Bar for current exercise hold */}
             {successCount > 0 && (
-              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-64 h-3 bg-white/30 rounded-full overflow-hidden z-20">
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 w-64 progress-bar z-20">
                 <div 
-                  className="h-full bg-emerald-400 transition-all duration-75"
+                  className="progress-bar-fill"
                   style={{ width: `${(successCount / 25) * 100}%` }}
                 />
               </div>
             )}
           </div>
-        </div>
+        </GlassCard>
 
         {/* Instructions */}
-        <div className="glass rounded-3xl p-8 flex flex-col min-h-[500px]">
-          <h2 className="text-3xl font-extrabold mb-4 text-emerald-800 dark:text-emerald-400">
+        <GlassCard className="p-8 flex flex-col min-h-[500px]">
+          <h2 className="heading-lg text-3xl mb-4 text-success">
             {currentExercise.title}
           </h2>
-          <p className="text-xl text-slate-700 dark:text-slate-200 mb-8 font-medium">
+          <p className="text-xl text-muted mb-8 font-medium">
             {currentExercise.desc}
           </p>
           
-          <div className="flex-1 bg-gradient-to-tr from-white to-emerald-50 dark:from-slate-800 dark:to-emerald-900/30 rounded-3xl border-2 border-emerald-100 dark:border-emerald-800 flex flex-col items-center justify-center relative overflow-hidden shadow-inner">
+          <div className="flex-1 glass rounded-3xl border border-success/20 flex flex-col items-center justify-center relative overflow-hidden">
              
              <motion.div 
                key={currentExIndex}
@@ -312,12 +312,12 @@ export default function GymnasticsPage() {
                 currentExercise.target === 'pucker' ? '😗' : '😮'}
              </motion.div>
 
-             <div className="text-emerald-600 dark:text-emerald-400 font-bold text-lg bg-emerald-100 dark:bg-emerald-900/50 px-6 py-2 rounded-full">
+             <div className="badge-success font-bold text-lg px-6 py-2">
                Маған қарап қайтала!
              </div>
           </div>
-        </div>
+        </GlassCard>
       </main>
-    </div>
+    </PageShell>
   );
 }

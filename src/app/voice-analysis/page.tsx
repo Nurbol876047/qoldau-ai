@@ -2,10 +2,14 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Mic, Languages, Square, Play, AlertCircle, RefreshCw } from "lucide-react";
+import { ArrowLeft, Mic, Languages, Square, AlertCircle, RefreshCw } from "lucide-react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Sphere, MeshDistortMaterial } from "@react-three/drei";
 import * as THREE from "three";
+import PageShell from "@/components/PageShell";
+import GlassCard from "@/components/GlassCard";
+import WaveformBars from "@/components/WaveformBars";
+import ProgressRing from "@/components/ProgressRing";
 
 function Visualizer3D({ isCorrect, isSpeaking }: { isCorrect: boolean | null, isSpeaking: boolean }) {
   const meshRef = useRef<any>(null);
@@ -28,7 +32,7 @@ function Visualizer3D({ isCorrect, isSpeaking }: { isCorrect: boolean | null, is
     }
   });
 
-  const color = isCorrect === true ? "#10B981" : isCorrect === false ? "#F59E0B" : "#3B82F6";
+  const color = isCorrect === true ? "#22c55e" : isCorrect === false ? "#facc15" : "#38bdf8";
 
   return (
     <>
@@ -91,11 +95,11 @@ export default function VoiceAnalysisPage() {
       animationFrameRef.current = requestAnimationFrame(draw);
       analyserRef.current!.getByteTimeDomainData(dataArray);
 
-      ctx.fillStyle = "rgb(248, 250, 252)"; 
+      ctx.fillStyle = "rgb(238, 244, 255)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.lineWidth = 3;
-      ctx.strokeStyle = "rgb(59, 130, 246)"; 
+      ctx.strokeStyle = "rgb(56, 189, 248)";
       ctx.beginPath();
 
       const sliceWidth = (canvas.width * 1.0) / bufferLength;
@@ -235,18 +239,18 @@ export default function VoiceAnalysisPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col p-6 relative">
-      <header className="flex items-center justify-between mb-8">
-        <Link href="/" className="p-3 rounded-full bg-white border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2 font-medium shadow-sm">
-          <ArrowLeft className="w-5 h-5 text-slate-800" />
-          <span className="text-slate-800">Артқа</span>
+    <PageShell theme="light" className="p-6">
+      <header className="flex items-center justify-between mb-8 relative z-10">
+        <Link href="/" className="btn-ghost">
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+          <span>Артқа</span>
         </Link>
         
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-slate-800 mr-4">Дауыс анализі</h1>
+          <h1 className="heading-lg text-2xl mr-4">Дауыс анализі</h1>
           <button 
             onClick={handleLangToggle}
-            className="bg-white border border-slate-200 px-6 py-2 rounded-full font-bold text-slate-800 flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm"
+            className="btn-ghost font-bold"
           >
             <Languages className="w-5 h-5" />
             {lang === "KZ" ? "Қазақша" : "Русский"}
@@ -254,30 +258,30 @@ export default function VoiceAnalysisPage() {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <main className="flex-1 w-full max-w-6xl mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* Left column: Record & Audio */}
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-md flex flex-col items-center">
+        <GlassCard className="p-8 flex flex-col items-center">
           <div className="mb-8 text-center">
-            <h2 className="text-xl font-medium text-slate-500 mb-2">
+            <h2 className="text-xl font-medium text-muted mb-2">
               {lang === "KZ" ? "Осы сөзді қайталаңыз:" : "Повторите это слово:"}
             </h2>
-            <div className="text-5xl font-extrabold text-blue-600 tracking-wider">
+            <div className="text-5xl font-extrabold gradient-text tracking-wider">
               {targetWord}
             </div>
           </div>
 
-          <div className="w-full h-32 mb-8 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 overflow-hidden relative shadow-inner">
+          <div className="w-full h-32 mb-8 glass rounded-2xl flex items-center justify-center overflow-hidden relative">
              <canvas ref={canvasRef} width={400} height={128} className="w-full h-full" />
              {status !== "recording" && (
-                <div className="absolute inset-0 flex items-center justify-center text-slate-400">
-                  {lang === "KZ" ? "Аудио толқыны" : "Аудио волна"}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <WaveformBars active={false} />
                 </div>
              )}
           </div>
 
           {status === "error" && (
-            <div className="w-full bg-red-50 text-red-600 p-4 rounded-xl mb-6 flex items-center gap-3 border border-red-200">
+            <div className="w-full banner-error p-4 mb-6 flex items-center gap-3">
                <AlertCircle className="w-6 h-6" />
                <p>{errorMsg}</p>
             </div>
@@ -287,20 +291,20 @@ export default function VoiceAnalysisPage() {
             {status === "idle" || status === "result" || status === "error" ? (
               <button
                 onClick={startRecording}
-                className="w-20 h-20 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-105"
+                className="w-20 h-20 rounded-full bg-gradient-to-br from-accent to-accent-hover text-white flex items-center justify-center shadow-lg shadow-accent/30 transition-transform hover:scale-105"
               >
                 <Mic className="w-8 h-8" />
               </button>
             ) : status === "recording" ? (
               <button
                 onClick={stopRecording}
-                className="w-20 h-20 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg animate-pulse"
+                className="w-20 h-20 rounded-full bg-error text-white flex items-center justify-center shadow-lg animate-pulse"
               >
                 <Square className="w-8 h-8" />
               </button>
             ) : (
-              <div className="w-20 h-20 rounded-full bg-slate-200 flex items-center justify-center shadow-lg">
-                <RefreshCw className="w-8 h-8 text-slate-400 animate-spin" />
+              <div className="w-20 h-20 rounded-full glass flex items-center justify-center shadow-lg">
+                <RefreshCw className="w-8 h-8 text-muted animate-spin" />
               </div>
             )}
           </div>
@@ -310,21 +314,21 @@ export default function VoiceAnalysisPage() {
               <audio src={audioUrl} controls className="w-full max-w-sm" />
               <button 
                 onClick={analyzeAudio}
-                className="w-full max-w-sm bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition-colors shadow-md"
+                className="btn-primary w-full max-w-sm py-4"
               >
                 {lang === "KZ" ? "Анализге жіберу" : "Отправить на анализ"}
               </button>
             </div>
           )}
-        </div>
+        </GlassCard>
 
         {/* Right column: 3D Visualization & Result */}
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-md flex flex-col">
-           <h3 className="text-xl font-bold text-slate-800 mb-4 text-center">
+        <GlassCard className="p-8 flex flex-col">
+           <h3 className="heading-lg text-xl mb-4 text-center">
              {lang === "KZ" ? "Визуализация және Нәтиже" : "Визуализация и Результат"}
            </h3>
            
-           <div className="flex-1 min-h-[300px] w-full bg-slate-50 rounded-2xl border border-slate-100 overflow-hidden relative mb-6">
+           <div className="flex-1 min-h-[300px] w-full glass rounded-2xl overflow-hidden relative mb-6">
               <Canvas camera={{ position: [0, 0, 3] }}>
                  <Visualizer3D 
                    isSpeaking={status === "recording"} 
@@ -334,7 +338,7 @@ export default function VoiceAnalysisPage() {
               
               {status === "analyzing" && (
                 <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10">
-                  <div className="bg-white px-6 py-3 rounded-full shadow-lg font-bold text-blue-600 flex items-center gap-3">
+                  <div className="glass px-6 py-3 rounded-full font-bold text-accent flex items-center gap-3">
                     <RefreshCw className="w-5 h-5 animate-spin" />
                     {lang === "KZ" ? "Талданып жатыр..." : "Анализируем..."}
                   </div>
@@ -343,32 +347,33 @@ export default function VoiceAnalysisPage() {
            </div>
 
            {result && (
-             <div className={`p-6 rounded-2xl border ${result.isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-orange-50 border-orange-200'}`}>
+             <div className={`p-6 rounded-2xl ${result.isCorrect ? 'banner-success' : 'banner-warning'}`}>
                 <div className="text-2xl font-bold mb-2 flex items-center gap-2">
                   {result.isCorrect ? (
-                    <span className="text-emerald-600">Дұрыс айттың! ✅</span>
+                    <span className="text-success">Дұрыс айттың! ✅</span>
                   ) : (
-                    <span className="text-orange-600">Тағы бір рет көрейік 🔄</span>
+                    <span className="text-warning">Тағы бір рет көрейік 🔄</span>
                   )}
                 </div>
-                <div className="text-slate-600">
+                <div className="text-muted">
                   <strong>{lang === "KZ" ? "Сенің сөзің:" : "Ты сказал(а):"}</strong> {result.recognized}
                 </div>
-                <div className="text-slate-600 mt-1">
-                  <strong>{lang === "KZ" ? "Дәлдік:" : "Точность:"}</strong> {result.accuracy}%
+                <div className="flex items-center gap-4 mt-3">
+                  <ProgressRing value={result.accuracy} size={64} strokeWidth={5} color={result.isCorrect ? "var(--success)" : "var(--warning)"} />
+                  <span className="text-muted font-medium">{lang === "KZ" ? "Дәлдік" : "Точность"}</span>
                 </div>
              </div>
            )}
            
            {!result && status !== "analyzing" && (
-             <div className="p-6 rounded-2xl border border-slate-100 bg-slate-50 text-center text-slate-500">
+             <div className="glass p-6 text-center text-muted">
                 {lang === "KZ" 
                   ? "Микрофонды басып, сөзді айтыңыз, содан кейін нәтижені күтіңіз." 
                   : "Нажмите на микрофон, произнесите слово, затем отправьте на анализ."}
              </div>
            )}
-        </div>
+        </GlassCard>
       </main>
-    </div>
+    </PageShell>
   );
 }

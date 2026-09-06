@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, Loader2, Hand } from "lucide-react";
 import { motion } from "framer-motion";
 import { GestureRecognizer, FilesetResolver } from "@mediapipe/tasks-vision";
+import PageShell from "@/components/PageShell";
+import GlassCard from "@/components/GlassCard";
 
 // Define mapping for the predefined gestures in the model
 const GESTURE_MAP: Record<string, { kz: string, emoji: string, ru: string }> = {
@@ -174,7 +176,7 @@ export default function GesturesPage() {
         if (ctx) {
           ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
           if (results.landmarks && results.landmarks.length > 0) {
-            ctx.fillStyle = "#3B82F6";
+            ctx.fillStyle = "#38bdf8";
             ctx.strokeStyle = "#ffffff";
             ctx.lineWidth = 2;
             for (const landmarks of results.landmarks) {
@@ -200,44 +202,44 @@ export default function GesturesPage() {
   const currentDisplay = GESTURE_MAP[gesture] || GESTURE_MAP["None"];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col p-6">
-      <header className="flex items-center justify-between mb-8">
-        <Link href="/" className="p-3 rounded-full bg-white border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2 font-medium shadow-sm">
-          <ArrowLeft className="w-5 h-5 text-slate-800" />
-          <span className="text-slate-800">Артқа</span>
+    <PageShell theme="light" className="p-6">
+      <header className="flex items-center justify-between mb-8 relative z-10">
+        <Link href="/" className="btn-ghost">
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+          <span>Артқа</span>
         </Link>
         
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-slate-800 mr-4 flex items-center gap-2">
-            <Hand className="w-6 h-6 text-pink-500" />
+          <h1 className="heading-lg text-2xl mr-4 flex items-center gap-2">
+            <Hand className="w-6 h-6 text-ai-purple" />
             Ым-ишарат тілі
           </h1>
           <button 
             onClick={() => playTTS("Дыбыс жұмыс істеп тұр!")}
-            className="bg-blue-50 border border-blue-200 px-4 py-2 rounded-full font-bold text-blue-600 flex items-center gap-2 hover:bg-blue-100 transition-colors shadow-sm"
+            className="btn-ghost font-bold text-accent"
           >
             🔊 Тексеру
           </button>
           <button 
             onClick={() => setLang(lang === "KZ" ? "RU" : "KZ")}
-            className="bg-white border border-slate-200 px-6 py-2 rounded-full font-bold text-slate-800 flex items-center gap-2 hover:bg-slate-50 transition-colors shadow-sm"
+            className="btn-ghost font-bold"
           >
             {lang === "KZ" ? "Қазақша" : "Русский"}
           </button>
         </div>
       </header>
 
-      <main className="flex-1 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <main className="flex-1 max-w-5xl mx-auto w-full relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Camera Section */}
-        <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-xl flex flex-col items-center">
-          <h2 className="text-xl font-bold mb-4 text-slate-700">
+        <GlassCard className="p-6 flex flex-col items-center">
+          <h2 className="heading-lg text-xl mb-4">
             {lang === "KZ" ? "Камераға қолыңызды көрсетіңіз" : "Покажите жест в камеру"}
           </h2>
           
-          <div className="relative w-full max-w-[640px] aspect-video bg-slate-100 rounded-3xl overflow-hidden border border-slate-200">
+          <div className="relative w-full max-w-[640px] aspect-video glass rounded-3xl overflow-hidden">
             {!isLoaded && !errorMsg && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 gap-3 z-20">
-                <Loader2 className="w-10 h-10 animate-spin text-pink-500" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted gap-3 z-20">
+                <Loader2 className="w-10 h-10 animate-spin text-ai-purple" />
                 <span className="font-medium">
                   {lang === "KZ" ? "Модель жүктелуде..." : "Загрузка модели..."}
                 </span>
@@ -245,7 +247,7 @@ export default function GesturesPage() {
             )}
             
             {errorMsg && (
-              <div className="absolute inset-0 flex items-center justify-center text-red-500 p-6 text-center z-20 bg-red-50">
+              <div className="absolute inset-0 flex items-center justify-center text-error p-6 text-center z-20 banner-error">
                 {errorMsg}
               </div>
             )}
@@ -265,14 +267,14 @@ export default function GesturesPage() {
               className="absolute inset-0 w-full h-full object-cover -scale-x-100 z-10 pointer-events-none"
             />
           </div>
-        </div>
+        </GlassCard>
 
         {/* Result Section */}
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-xl flex flex-col items-center justify-center text-center relative overflow-hidden">
+        <GlassCard strong className="p-8 flex flex-col items-center justify-center text-center relative overflow-hidden">
           
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-pink-400 to-purple-500" />
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent to-ai-purple" />
           
-          <h3 className="text-2xl font-bold text-slate-500 mb-8 uppercase tracking-widest">
+          <h3 className="text-2xl font-bold text-muted mb-8 uppercase tracking-widest">
              {lang === "KZ" ? "ТАНЫЛҒАН ҚИМЫЛ" : "РАСПОЗНАННЫЙ ЖЕСТ"}
           </h3>
 
@@ -287,13 +289,13 @@ export default function GesturesPage() {
               {currentDisplay.emoji}
             </div>
             
-            <div className={`text-4xl md:text-5xl font-black ${gesture !== 'None' ? 'text-pink-600' : 'text-slate-400'}`}>
+            <div className={`text-4xl md:text-5xl font-black ${gesture !== 'None' ? 'gradient-text' : 'text-muted'}`}>
               {lang === "KZ" ? currentDisplay.kz : currentDisplay.ru}
             </div>
           </motion.div>
           
           {gesture === 'None' && (
-             <p className="mt-8 text-slate-400 font-medium max-w-xs">
+             <p className="mt-8 text-muted font-medium max-w-xs">
                {lang === "KZ" 
                  ? "Камера алдында қолыңызбен 'Сәлем' немесе басқа белгі көрсетіңіз." 
                  : "Покажите рукой 'Привет' или другой жест перед камерой."}
@@ -302,7 +304,7 @@ export default function GesturesPage() {
 
           {/* Available Gestures List */}
           <div className="w-full mt-auto pt-10">
-            <p className="text-sm font-bold text-slate-400 mb-4 uppercase tracking-wider">
+            <p className="text-sm font-bold text-muted mb-4 uppercase tracking-wider">
               {lang === "KZ" ? "Қолжетімді қимылдар:" : "Доступные жесты:"}
             </p>
             <div className="flex flex-wrap justify-center gap-3">
@@ -313,13 +315,13 @@ export default function GesturesPage() {
                     key={key} 
                     className={`flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all ${
                       isActive 
-                        ? "bg-pink-50 border-pink-500 scale-110 shadow-lg" 
-                        : "bg-white border-slate-100 opacity-60"
+                        ? "glass border-ai-purple scale-110 shadow-lg shadow-ai-purple/20" 
+                        : "glass opacity-60 border-transparent"
                     }`}
                     title={lang === "KZ" ? data.kz : data.ru}
                   >
                     <span className="text-3xl mb-1">{data.emoji}</span>
-                    <span className={`text-[10px] font-bold ${isActive ? "text-pink-600" : "text-slate-500"}`}>
+                    <span className={`text-[10px] font-bold ${isActive ? "text-ai-purple" : "text-muted"}`}>
                       {lang === "KZ" ? data.kz : data.ru}
                     </span>
                   </div>
@@ -327,8 +329,8 @@ export default function GesturesPage() {
               })}
             </div>
           </div>
-        </div>
+        </GlassCard>
       </main>
-    </div>
+    </PageShell>
   );
 }

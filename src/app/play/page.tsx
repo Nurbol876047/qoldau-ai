@@ -2,15 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, PlayCircle, Lock, Volume2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, PlayCircle, Lock, Star } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-
-interface Exercise {
-  id: string;
-  title: string;
-  status: "done" | "current" | "locked";
-}
+import PageShell from "@/components/PageShell";
+import GlassCard from "@/components/GlassCard";
+import ProgressRing from "@/components/ProgressRing";
 
 const sounds = ["Р", "Л", "Ш", "Ж", "С", "Қ", "Ғ", "Ң"];
 
@@ -26,72 +23,81 @@ export default function PlayPage() {
   const [selectedSound, setSelectedSound] = useState<string>("Р");
   const [progress, setProgress] = useState<string[]>([]);
 
-  // Load progress when sound changes
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem('playProgress_v2') || '{}');
+    const data = JSON.parse(localStorage.getItem("playProgress_v2") || "{}");
     setProgress(data[selectedSound] || []);
   }, [selectedSound]);
 
+  const progressPercent = Math.round((progress.length / exercisesList.length) * 100);
+
   return (
-    <div className="min-h-screen bg-background relative flex flex-col p-6">
-      {/* Dynamic Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-900 dark:to-indigo-950 -z-10" />
-      
-      {/* Header */}
+    <PageShell theme="dark" className="p-6">
       <header className="flex items-center justify-between mb-8 relative z-10">
-        <Link href="/" className="p-3 rounded-full glass hover:bg-white/50 transition-colors flex items-center gap-2 font-medium">
-          <ArrowLeft className="w-5 h-5 text-primary" />
+        <Link href="/" className="btn-ghost">
+          <ArrowLeft className="w-5 h-5 text-accent" />
           <span>Артқа</span>
         </Link>
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={() => {
-              localStorage.removeItem('playProgress_v2');
+              localStorage.removeItem("playProgress_v2");
               setProgress([]);
             }}
-            className="glass px-4 py-2 rounded-full font-medium text-slate-500 hover:text-slate-800 transition-colors shadow-sm"
+            className="btn-ghost text-muted text-sm"
           >
-            Жаңадан бастау (Reset)
+            Жаңадан бастау
           </button>
-          <div className="glass px-6 py-2 rounded-full font-bold text-primary flex items-center gap-2">
+          <div className="glass px-5 py-2 rounded-full font-bold text-accent flex items-center gap-2">
             <span>Оқушы: Аружан</span>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-400 to-amber-300 flex items-center justify-center text-white">👧🏻</div>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-gold to-warning flex items-center justify-center text-base">👧🏻</div>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-5xl mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
+      <main className="flex-1 w-full max-w-6xl mx-auto relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Sidebar: Sounds */}
         <aside className="lg:col-span-3 flex flex-col gap-4">
-          <h2 className="font-bold text-xl mb-2">Дыбысты таңдау</h2>
+          <h2 className="heading-lg text-xl mb-2">Дыбысты таңдау</h2>
           <div className="grid grid-cols-4 lg:grid-cols-2 gap-3">
             {sounds.map((sound) => (
               <button
                 key={sound}
                 onClick={() => setSelectedSound(sound)}
                 className={`aspect-square rounded-2xl text-2xl font-bold flex items-center justify-center transition-all ${
-                  selectedSound === sound 
-                  ? "bg-primary text-white shadow-lg shadow-primary/30 scale-105"
-                  : "bg-transparent border-2 border-slate-200/60 text-slate-400 hover:border-primary/50 hover:text-primary hover:bg-primary/5 dark:border-slate-700 dark:text-slate-500"
+                  selectedSound === sound
+                    ? "bg-gradient-to-br from-accent to-accent-hover text-white shadow-lg shadow-accent/40 scale-105"
+                    : "glass text-muted hover:text-accent hover:border-accent/30"
                 }`}
               >
                 {sound}
               </button>
             ))}
           </div>
+
+          {/* Progress widget */}
+          <GlassCard className="p-5 mt-4 flex flex-col items-center gap-3">
+            <ProgressRing value={progressPercent} color="var(--accent)" label="Прогресс" />
+            <div className="flex items-center gap-1">
+              {Array.from({ length: exercisesList.length }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={`w-5 h-5 ${i < progress.length ? "text-gold fill-gold" : "text-white/20"}`}
+                />
+              ))}
+            </div>
+          </GlassCard>
         </aside>
 
         {/* Main: Exercises */}
         <section className="lg:col-span-9 flex flex-col gap-6">
-          <div className="glass p-8 rounded-3xl w-full">
+          <GlassCard strong className="p-8 w-full">
             <div className="flex items-center gap-4 mb-8">
-              <div className="w-16 h-16 bg-gradient-to-br from-primary to-purple-500 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 text-white text-3xl font-bold">
+              <div className="w-16 h-16 bg-gradient-to-br from-accent to-ai-purple rounded-2xl flex items-center justify-center shadow-lg shadow-accent/30 text-white text-3xl font-bold">
                 {selectedSound}
               </div>
               <div>
-                <h1 className="text-3xl font-extrabold">«{selectedSound}» дыбысын жаттықтыру</h1>
-                <p className="text-slate-500 mt-1">Барлық тапсырмаларды орындап, жұлдызшаларды жина!</p>
+                <h1 className="heading-lg text-3xl">«{selectedSound}» дыбысын жаттықтыру</h1>
+                <p className="text-muted mt-1">Барлық тапсырмаларды орындап, жұлдызшаларды жина!</p>
               </div>
             </div>
 
@@ -113,46 +119,47 @@ export default function PlayPage() {
                       if (!isLocked) router.push(`/play/${selectedSound}/${ex.id}`);
                     }}
                     className={`w-full rounded-2xl p-5 flex items-center justify-between transition-all group
-                      ${isDone ? "bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20" : ""}
-                      ${isCurrent ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg shadow-orange-500/30 transform hover:scale-[1.02]" : ""}
-                      ${isLocked ? "bg-slate-100 dark:bg-slate-800/50 opacity-60 cursor-not-allowed border border-slate-200 dark:border-slate-700" : ""}
+                      ${isDone ? "banner-success" : ""}
+                      ${isCurrent ? "bg-gradient-to-r from-gold to-warning text-[#1a1a2e] shadow-lg shadow-gold/30 transform hover:scale-[1.02]" : ""}
+                      ${isLocked ? "glass opacity-50 cursor-not-allowed" : ""}
                     `}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center
-                        ${isDone ? "bg-emerald-100 text-emerald-600" : ""}
-                        ${isCurrent ? "bg-white/20 text-white" : ""}
-                        ${isLocked ? "bg-slate-200 dark:bg-slate-700 text-slate-400" : ""}
-                      `}>
+                      <div
+                        className={`w-12 h-12 rounded-full flex items-center justify-center font-bold
+                        ${isDone ? "bg-success/20 text-success" : ""}
+                        ${isCurrent ? "bg-black/10 text-[#1a1a2e]" : ""}
+                        ${isLocked ? "bg-white/5 text-muted" : ""}
+                      `}
+                      >
                         {idx + 1}
                       </div>
-                      <span className={`text-xl font-bold ${
-                        isCurrent ? "text-white" : 
-                        isDone ? "text-emerald-700 dark:text-emerald-400" : 
-                        "text-slate-700 dark:text-slate-200"
-                      }`}>
+                      <span
+                        className={`text-xl font-bold ${
+                          isCurrent ? "text-[#1a1a2e]" : isDone ? "text-success" : "text-foreground"
+                        }`}
+                      >
                         {ex.title}
                       </span>
                     </div>
 
                     <div className="flex items-center">
-                      {isDone && <CheckCircle2 className="w-8 h-8 text-emerald-500" />}
+                      {isDone && <CheckCircle2 className="w-8 h-8 text-success" />}
                       {isCurrent && (
-                        <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full">
+                        <div className="flex items-center gap-2 bg-black/10 px-4 py-2 rounded-full">
                           <PlayCircle className="w-5 h-5" />
                           <span className="font-semibold">Бастау</span>
                         </div>
                       )}
-                      {isLocked && <Lock className="w-6 h-6 text-slate-400" />}
+                      {isLocked && <Lock className="w-6 h-6 text-muted" />}
                     </div>
                   </motion.button>
                 );
               })}
             </div>
-          </div>
+          </GlassCard>
         </section>
-
       </main>
-    </div>
+    </PageShell>
   );
 }
