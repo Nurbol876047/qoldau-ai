@@ -54,8 +54,32 @@ function Visualizer3D({ isCorrect, isSpeaking }: { isCorrect: boolean | null, is
   );
 }
 
+const WORDS: Record<"KZ" | "RU", { text: string; emoji: string }[]> = {
+  KZ: [
+    { text: "ҚҰЛЫН", emoji: "🐴" },
+    { text: "АЛМА", emoji: "🍎" },
+    { text: "КІТАП", emoji: "📖" },
+    { text: "МЫСЫҚ", emoji: "🐱" },
+    { text: "БАЛЫҚ", emoji: "🐟" },
+    { text: "КҮН", emoji: "☀️" },
+    { text: "ГҮЛ", emoji: "🌸" },
+    { text: "ДОСТЫҚ", emoji: "🤝" },
+  ],
+  RU: [
+    { text: "СОБАКА", emoji: "🐶" },
+    { text: "ЯБЛОКО", emoji: "🍎" },
+    { text: "КНИГА", emoji: "📖" },
+    { text: "КОШКА", emoji: "🐱" },
+    { text: "РЫБА", emoji: "🐟" },
+    { text: "СОЛНЦЕ", emoji: "☀️" },
+    { text: "ЦВЕТОК", emoji: "🌸" },
+    { text: "МАШИНА", emoji: "🚗" },
+  ],
+};
+
 export default function VoiceAnalysisPage() {
   const [lang, setLang] = useState<"KZ" | "RU">("KZ");
+  const [wordIndex, setWordIndex] = useState(0);
   const [status, setStatus] = useState<"idle" | "recording" | "analyzing" | "result" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   
@@ -69,7 +93,26 @@ export default function VoiceAnalysisPage() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const animationFrameRef = useRef<number | null>(null);
 
-  const targetWord = lang === "KZ" ? "ҚҰЛЫН" : "СОБАКА";
+  const words = WORDS[lang];
+  const currentWord = words[wordIndex];
+  const targetWord = currentWord.text;
+
+  const resetForNewWord = () => {
+    setResult(null);
+    setAudioUrl(null);
+    setErrorMsg("");
+    setStatus("idle");
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext("2d");
+      ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+  };
+
+  const nextWord = () => {
+    resetForNewWord();
+    setWordIndex((i) => (i + 1) % words.length);
+  };
   
   useEffect(() => {
     return () => {
@@ -234,8 +277,8 @@ export default function VoiceAnalysisPage() {
 
   const handleLangToggle = () => {
     setLang(lang === "KZ" ? "RU" : "KZ");
-    setResult(null);
-    setAudioUrl(null);
+    setWordIndex(0);
+    resetForNewWord();
   };
 
   return (
@@ -266,8 +309,21 @@ export default function VoiceAnalysisPage() {
             <h2 className="text-xl font-medium text-muted mb-2">
               {lang === "KZ" ? "Осы сөзді қайталаңыз:" : "Повторите это слово:"}
             </h2>
+            <div className="text-6xl mb-1">{currentWord.emoji}</div>
             <div className="text-5xl font-extrabold gradient-text tracking-wider">
               {targetWord}
+            </div>
+            <div className="flex items-center justify-center gap-3 mt-4">
+              <span className="badge text-sm px-3 py-1">
+                {lang === "KZ" ? "Сөз" : "Слово"} {wordIndex + 1} / {words.length}
+              </span>
+              <button
+                onClick={nextWord}
+                disabled={status === "recording" || status === "analyzing"}
+                className="btn-ghost text-sm px-4 py-1.5 disabled:opacity-40"
+              >
+                {lang === "KZ" ? "Келесі сөз →" : "Следующее слово →"}
+              </button>
             </div>
           </div>
 

@@ -10,41 +10,126 @@ import GlassCard from "@/components/GlassCard";
 
 const SOUND_DATA: Record<string, {
   repeatWord: string;
-  buildWord: string;
+  buildWord: { text: string; emoji: string };
   findWords: { text: string; has: boolean; emoji: string }[];
 }> = {
-  "Р": { repeatWord: "РАУШАН", buildWord: "РАҚМЕТ", findWords: [ { text: "АЛМА", has: false, emoji: "🍎" }, { text: "РОБОТ", has: true, emoji: "🤖" }, { text: "КІТАП", has: false, emoji: "📚" } ] },
-  "Л": { repeatWord: "ЛАҚ", buildWord: "ЛАШЫН", findWords: [ { text: "КҮН", has: false, emoji: "☀️" }, { text: "ЛАГЕРЬ", has: true, emoji: "⛺" }, { text: "АҒАШ", has: false, emoji: "🌳" } ] },
-  "Ш": { repeatWord: "ШАР", buildWord: "ШАНА", findWords: [ { text: "МЫСЫҚ", has: false, emoji: "🐱" }, { text: "ШАШ", has: true, emoji: "💇‍♀️" }, { text: "ИТ", has: false, emoji: "🐶" } ] },
-  "Ж": { repeatWord: "ЖОЛ", buildWord: "ЖУСАН", findWords: [ { text: "СУ", has: false, emoji: "💧" }, { text: "ЖЫЛАН", has: true, emoji: "🐍" }, { text: "ОТ", has: false, emoji: "🔥" } ] },
-  "С": { repeatWord: "СУ", buildWord: "САҒАТ", findWords: [ { text: "ТАУ", has: false, emoji: "⛰️" }, { text: "САН", has: true, emoji: "🔢" }, { text: "АЙ", has: false, emoji: "🌙" } ] },
-  "Қ": { repeatWord: "ҚАЗ", buildWord: "ҚАЛАМ", findWords: [ { text: "ШӨП", has: false, emoji: "🌿" }, { text: "ҚОЙ", has: true, emoji: "🐑" }, { text: "ГҮЛ", has: false, emoji: "🌸" } ] },
-  "Ғ": { repeatWord: "ҒАРЫШ", buildWord: "ҒАЛЫМ", findWords: [ { text: "ТАСТАБАҚ", has: false, emoji: "🍽️" }, { text: "БАҒДАРШАМ", has: true, emoji: "🚦" }, { text: "ОҚУШЫ", has: false, emoji: "👨‍🎓" } ] },
-  "Ң": { repeatWord: "ШАҢ", buildWord: "ЖАҢҒАҚ", findWords: [ { text: "КӨЗ", has: false, emoji: "👁️" }, { text: "ШАҢҒЫ", has: true, emoji: "🎿" }, { text: "ҚОЛ", has: false, emoji: "✋" } ] }
+  "Р": { repeatWord: "РАУШАН", buildWord: { text: "АРА", emoji: "🐝" }, findWords: [ { text: "АЛМА", has: false, emoji: "🍎" }, { text: "РОБОТ", has: true, emoji: "🤖" }, { text: "КІТАП", has: false, emoji: "📚" } ] },
+  "Л": { repeatWord: "ЛАҚ", buildWord: { text: "КӨЛ", emoji: "🏞️" }, findWords: [ { text: "КҮН", has: false, emoji: "☀️" }, { text: "ЛАГЕРЬ", has: true, emoji: "⛺" }, { text: "АҒАШ", has: false, emoji: "🌳" } ] },
+  "Ш": { repeatWord: "ШАР", buildWord: { text: "ШАЙ", emoji: "🍵" }, findWords: [ { text: "МЫСЫҚ", has: false, emoji: "🐱" }, { text: "ШАШ", has: true, emoji: "💇‍♀️" }, { text: "ИТ", has: false, emoji: "🐶" } ] },
+  "Ж": { repeatWord: "ЖОЛ", buildWord: { text: "ЖАЗ", emoji: "☀️" }, findWords: [ { text: "СУ", has: false, emoji: "💧" }, { text: "ЖЫЛАН", has: true, emoji: "🐍" }, { text: "ОТ", has: false, emoji: "🔥" } ] },
+  "С": { repeatWord: "СУ", buildWord: { text: "СИЫР", emoji: "🐄" }, findWords: [ { text: "ТАУ", has: false, emoji: "⛰️" }, { text: "САН", has: true, emoji: "🔢" }, { text: "АЙ", has: false, emoji: "🌙" } ] },
+  "Қ": { repeatWord: "ҚАЗ", buildWord: { text: "ҚАР", emoji: "❄️" }, findWords: [ { text: "ШӨП", has: false, emoji: "🌿" }, { text: "ҚОЙ", has: true, emoji: "🐑" }, { text: "ГҮЛ", has: false, emoji: "🌸" } ] },
+  "Ғ": { repeatWord: "ҒАРЫШ", buildWord: { text: "АҒАШ", emoji: "🌳" }, findWords: [ { text: "ТАСТАБАҚ", has: false, emoji: "🍽️" }, { text: "БАҒДАРШАМ", has: true, emoji: "🚦" }, { text: "ОҚУШЫ", has: false, emoji: "👨‍🎓" } ] },
+  "Ң": { repeatWord: "ШАҢ", buildWord: { text: "ТАҢ", emoji: "🌅" }, findWords: [ { text: "КӨЗ", has: false, emoji: "👁️" }, { text: "ШАҢҒЫ", has: true, emoji: "🎿" }, { text: "ҚОЛ", has: false, emoji: "✋" } ] }
 };
 
-// Game 1: Repeat Word
+// Game 1: Repeat Word — records the child's voice and auto-stops when they finish speaking
 function RepeatWordGame({ sound, targetWord, onComplete }: { sound: string, targetWord: string, onComplete: () => void }) {
   const [status, setStatus] = useState<"idle" | "recording" | "analyzing" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
-  
+  const [result, setResult] = useState<{ recognizedText: string; accuracy: number } | null>(null);
+  const [level, setLevel] = useState(0); // live mic level 0..1 for the visualiser
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<BlobPart[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const stoppedRef = useRef(false);
+
+  // Silence-detection tuning
+  const SPEECH_THRESHOLD = 0.025;   // RMS above this = the child is speaking
+  const SILENCE_HANG_MS = 1400;     // stop this long after speech stops
+  const NO_SPEECH_TIMEOUT_MS = 6000; // give up if nothing is said at all
+  const MAX_RECORDING_MS = 12000;   // hard cap
+
+  const cleanup = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+    audioCtxRef.current?.close().catch(() => {});
+    audioCtxRef.current = null;
+  };
+
+  useEffect(() => cleanup, []);
+
+  const stopRecording = () => {
+    if (stoppedRef.current) return;
+    stoppedRef.current = true;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    setLevel(0);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+  };
 
   const startRecording = async () => {
+    setErrorMsg("");
+    setResult(null);
+    stoppedRef.current = false;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+      streamRef.current = stream;
+
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      mediaRecorder.onstop = () => {
+        cleanup();
+        analyzeAudio();
       };
 
-      mediaRecorder.start(100);
+      // --- Web Audio analyser for silence detection ---
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const audioCtx = new AudioCtx();
+      audioCtxRef.current = audioCtx;
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 1024;
+      source.connect(analyser);
+      const buf = new Float32Array(analyser.fftSize);
+
+      const startedAt = performance.now();
+      let hasSpoken = false;
+      let lastLoudAt = performance.now();
+
+      const tick = () => {
+        analyser.getFloatTimeDomainData(buf);
+        let sum = 0;
+        for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+        const rms = Math.sqrt(sum / buf.length);
+        setLevel(Math.min(1, rms * 8));
+
+        const now = performance.now();
+        if (rms > SPEECH_THRESHOLD) {
+          hasSpoken = true;
+          lastLoudAt = now;
+        }
+
+        const elapsed = now - startedAt;
+        const silenceFor = now - lastLoudAt;
+
+        if (elapsed > MAX_RECORDING_MS) return stopRecording();
+        if (!hasSpoken && elapsed > NO_SPEECH_TIMEOUT_MS) {
+          setErrorMsg("Дауыс естілмеді. Микрофонға жақынырақ сөйлеп көр.");
+          return stopRecording();
+        }
+        if (hasSpoken && silenceFor > SILENCE_HANG_MS) return stopRecording();
+
+        rafRef.current = requestAnimationFrame(tick);
+      };
+
+      mediaRecorder.start();
       setStatus("recording");
-      setErrorMsg("");
+      rafRef.current = requestAnimationFrame(tick);
     } catch (err) {
       console.error(err);
       setStatus("error");
@@ -52,21 +137,16 @@ function RepeatWordGame({ sound, targetWord, onComplete }: { sound: string, targ
     }
   };
 
-  const stopRecordingAndAnalyze = () => {
-    if (mediaRecorderRef.current && status === "recording") {
-      mediaRecorderRef.current.onstop = async () => {
-        mediaRecorderRef.current?.stream.getTracks().forEach(track => track.stop());
-        await analyzeAudio();
-      };
-      mediaRecorderRef.current.stop();
-      setStatus("analyzing");
-    }
-  };
-
   const analyzeAudio = async () => {
+    setStatus("analyzing");
     try {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      
+      const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+      if (audioBlob.size < 1200) {
+        setStatus("error");
+        setErrorMsg((prev) => prev || "Жазба тым қысқа. Қайта айтып көр.");
+        return;
+      }
+
       const formData = new FormData();
       formData.append("audio", audioBlob);
       formData.append("targetWord", targetWord);
@@ -76,129 +156,209 @@ function RepeatWordGame({ sound, targetWord, onComplete }: { sound: string, targ
       if (!res.ok) throw new Error("API error");
 
       const data = await res.json();
-      
-      if (data.accuracy > 50) {
+      setResult({ recognizedText: data.recognizedText || "", accuracy: data.accuracy ?? 0 });
+
+      if (data.isCorrect || data.accuracy >= 60) {
         setStatus("success");
       } else {
         setStatus("error");
-        setErrorMsg(`Қате айтылды немесе естілмеді. (Танылған сөз: ${data.recognizedText || '...'})`);
+        setErrorMsg(
+          data.recognizedText
+            ? `Сен «${data.recognizedText}» дедің. Дұрысы — «${targetWord}».`
+            : "Сөз анық естілмеді. Тағы бір рет байқап көр."
+        );
       }
     } catch (err) {
       console.error(err);
       setStatus("error");
-      setErrorMsg("Талдау кезінде қате пайда болды.");
+      setErrorMsg("Талдау кезінде қате пайда болды. Қайтадан көріңіз.");
     }
   };
 
   return (
     <div className="flex flex-col items-center gap-6">
       <h2 className="heading-lg text-2xl">Осы сөзді қайтала:</h2>
-      <div className="text-7xl font-extrabold gradient-text mb-4 tracking-widest">{targetWord}</div>
-      
+      <div className="text-7xl font-extrabold gradient-text mb-2 tracking-widest">{targetWord}</div>
+
       {status === "error" && (
-        <div className="banner-error font-medium mb-2 px-4 py-2 text-center max-w-sm">
-          {errorMsg} <br/> <span className="text-sm">Қайтадан көріңіз</span>
+        <div className="banner-error font-medium mb-1 px-4 py-2 text-center max-w-sm">
+          {errorMsg}
         </div>
       )}
 
       {status !== "success" ? (
-        <div className="flex flex-col items-center gap-4 mt-4">
-          <button 
-            onClick={status === "recording" ? stopRecordingAndAnalyze : startRecording} 
+        <div className="flex flex-col items-center gap-4 mt-2">
+          <button
+            onClick={status === "recording" ? stopRecording : startRecording}
             disabled={status === "analyzing"}
-            className={`w-32 h-32 text-white rounded-full flex justify-center items-center shadow-xl transition-all 
-              ${status === "recording" ? 'bg-error animate-pulse scale-110 shadow-error/40' : 
-                status === "analyzing" ? 'bg-white/10 cursor-not-allowed' : 
-                'bg-gradient-to-br from-accent to-accent-hover hover:scale-105 shadow-accent/40'}`}
+            className={`relative w-32 h-32 text-white rounded-full flex justify-center items-center shadow-xl transition-all
+              ${status === "recording" ? "bg-error scale-110 shadow-error/40" :
+                status === "analyzing" ? "bg-white/10 cursor-not-allowed" :
+                "bg-gradient-to-br from-accent to-accent-hover hover:scale-105 shadow-accent/40"}`}
           >
+            {status === "recording" && (
+              <span
+                className="absolute inset-0 rounded-full border-4 border-white/40"
+                style={{ transform: `scale(${1 + level * 0.6})`, transition: "transform 80ms linear" }}
+              />
+            )}
             {status === "analyzing" ? (
-              <span className="text-xl font-bold">...</span>
+              <span className="text-xl font-bold animate-pulse">...</span>
             ) : (
               <Mic className="w-12 h-12" />
             )}
           </button>
           <p className="text-muted font-medium h-6">
-             {status === "recording" && "Тыңдап тұрмын (тоқтату үшін басыңыз)..."}
-             {status === "analyzing" && "Талданып жатыр..."}
-             {(status === "idle" || status === "error") && "Жазуды бастау үшін басыңыз"}
+            {status === "recording" && "Тыңдап тұрмын... айтып бол, өзім тоқтаймын"}
+            {status === "analyzing" && "Талданып жатыр..."}
+            {(status === "idle" || status === "error") && "Жазуды бастау үшін басыңыз"}
           </p>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-6 mt-4">
-           <div className="banner-success font-bold text-2xl flex items-center gap-3 px-6 py-3">
-             <CheckCircle2 className="w-8 h-8" /> Жарайсың! Өте жақсы шықты!
-           </div>
-           <button onClick={onComplete} className="btn-primary px-10 py-4 text-lg rounded-full">
-             Келесі тапсырма
-           </button>
+        <div className="flex flex-col items-center gap-5 mt-2">
+          <div className="banner-success font-bold text-2xl flex items-center gap-3 px-6 py-3">
+            <CheckCircle2 className="w-8 h-8" /> Жарайсың! Өте жақсы шықты!
+          </div>
+          {result && (
+            <p className="text-muted text-sm">
+              Танылған сөз: <span className="text-foreground font-semibold">{result.recognizedText || "—"}</span>
+              {"  ·  "}Дәлдік: {Math.round(result.accuracy)}%
+            </p>
+          )}
+          <button onClick={onComplete} className="btn-primary px-10 py-4 text-lg rounded-full">
+            Келесі тапсырма
+          </button>
         </div>
       )}
     </div>
   );
 }
 
-// Game 2: Build Word
-function BuildWordGame({ sound, targetWord, onComplete }: { sound: string, targetWord: string, onComplete: () => void }) {
-  const [scrambled, setScrambled] = useState<{char: string, id: number}[]>([]);
-  const [selected, setSelected] = useState<{char: string, id: number}[]>([]);
-  const [shake, setShake] = useState(false);
-  
+// Game 2: Build Word — short words + picture clue + guided letter-by-letter placing
+function BuildWordGame({ targetWord, emoji, onComplete }: { targetWord: string, emoji: string, onComplete: () => void }) {
+  const [scrambled, setScrambled] = useState<{ char: string, id: number }[]>([]);
+  const [placed, setPlaced] = useState<{ char: string, id: number }[]>([]);
+  const [wrongId, setWrongId] = useState<number | null>(null);
+  const [showHint, setShowHint] = useState(false);
+
+  const letters = targetWord.split('');
+  const done = placed.length === letters.length;
+
   useEffect(() => {
-    const letters = targetWord.split('').map((char, index) => ({ char, id: index }));
-    const shuffled = [...letters].sort(() => Math.random() - 0.5);
+    const items = letters.map((char, index) => ({ char, id: index }));
+    // shuffle, but make sure it isn't already in order
+    let shuffled = items;
+    for (let i = 0; i < 8 && shuffled.map(s => s.char).join('') === targetWord; i++) {
+      shuffled = [...items].sort(() => Math.random() - 0.5);
+    }
     setScrambled(shuffled);
-    setSelected([]);
+    setPlaced([]);
+    setShowHint(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetWord]);
 
-  const handleSelect = (item: {char: string, id: number}) => {
-    setSelected([...selected, item]);
+  const speak = () => {
+    fetch("/api/text-to-speech", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: targetWord }),
+    })
+      .then((r) => r.blob())
+      .then((b) => new Audio(URL.createObjectURL(b)).play())
+      .catch(() => {});
   };
 
-  useEffect(() => {
-    if (selected.length === targetWord.length && selected.length > 0) {
-      if (selected.map(s => s.char).join('') === targetWord) {
-        setTimeout(onComplete, 1500);
-      } else {
-        setShake(true);
-        setTimeout(() => {
-          setSelected([]);
-          setShake(false);
-        }, 1000);
-      }
+  const handleSelect = (item: { char: string, id: number }) => {
+    if (done || placed.some(p => p.id === item.id)) return;
+    const nextChar = letters[placed.length];
+    if (item.char === nextChar) {
+      setPlaced([...placed, item]);
+    } else {
+      setWrongId(item.id);
+      setTimeout(() => setWrongId(null), 500);
     }
-  }, [selected, targetWord, onComplete]);
+  };
+
+  const undo = () => setPlaced(placed.slice(0, -1));
+
+  useEffect(() => {
+    if (done) {
+      speak();
+      const t = setTimeout(onComplete, 1800);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done]);
 
   return (
-    <div className="flex flex-col items-center gap-8 w-full">
+    <div className="flex flex-col items-center gap-6 w-full">
       <h2 className="heading-lg text-2xl">Сөзді құрастыр:</h2>
-      <div className={`flex gap-3 mb-8 min-h-[90px] p-4 glass rounded-2xl ${shake ? 'animate-bounce' : ''}`}>
-        {targetWord.split('').map((_, i) => (
-          <div key={i} className="w-16 h-16 border-2 border-dashed border-accent/30 rounded-xl flex items-center justify-center text-4xl font-black text-gold bg-white/5 shadow-sm">
-            {selected[i]?.char || ""}
-          </div>
-        ))}
-      </div>
-      
-      <div className="flex gap-4 flex-wrap justify-center max-w-lg">
-        {scrambled.map((item) => {
-          const isSelected = selected.some(s => s.id === item.id);
+
+      {/* Picture clue */}
+      <button onClick={speak} title="Тыңдау" className="text-7xl leading-none hover:scale-110 transition-transform">
+        {emoji}
+      </button>
+
+      {/* Slots */}
+      <div className={`flex gap-3 p-4 glass rounded-2xl ${done ? 'ring-2 ring-success/50' : ''}`}>
+        {letters.map((ch, i) => {
+          const isFilled = i < placed.length;
+          const isNext = i === placed.length && !done;
           return (
-            <button 
+            <div
+              key={i}
+              className={`w-16 h-16 rounded-xl flex items-center justify-center text-4xl font-black bg-white/5 border-2 transition-all
+                ${isFilled ? 'border-gold text-gold' :
+                  isNext ? 'border-accent border-solid animate-pulse text-accent/40' :
+                  'border-dashed border-accent/25 text-accent/20'}`}
+            >
+              {isFilled ? placed[i].char : showHint ? ch : ''}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Letter tiles */}
+      <div className="flex gap-4 flex-wrap justify-center max-w-lg min-h-[88px]">
+        {scrambled.map((item) => {
+          const isUsed = placed.some(p => p.id === item.id);
+          return (
+            <button
               key={item.id}
               onClick={() => handleSelect(item)}
-              disabled={isSelected}
+              disabled={isUsed || done}
               className={`w-20 h-20 rounded-2xl text-4xl font-bold shadow-md transition-all border
-                ${isSelected ? "opacity-0 scale-50" : "glass text-foreground hover:scale-110 hover:border-gold/40 hover:text-gold"}`}
+                ${isUsed ? "opacity-0 scale-50 pointer-events-none" :
+                  wrongId === item.id ? "bg-error/20 border-error animate-bounce text-error" :
+                  "glass text-foreground hover:scale-110 hover:border-gold/40 hover:text-gold"}`}
             >
               {item.char}
             </button>
-          )
+          );
         })}
       </div>
-      {selected.length === targetWord.length && selected.map(s => s.char).join('') === targetWord && (
-         <div className="banner-success font-bold text-2xl mt-4 flex items-center gap-2 px-6 py-3">
-           <CheckCircle2 className="w-8 h-8" /> Керемет құрастырдың!
-         </div>
+
+      {/* Helpers */}
+      {!done && (
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowHint(v => !v)}
+            className="btn-ghost px-5 py-2 text-sm"
+          >
+            {showHint ? "Көмекті жасыру" : "💡 Көмек"}
+          </button>
+          {placed.length > 0 && (
+            <button onClick={undo} className="btn-ghost px-5 py-2 text-sm">
+              ↶ Артқа
+            </button>
+          )}
+        </div>
+      )}
+
+      {done && (
+        <div className="banner-success font-bold text-2xl mt-2 flex items-center gap-2 px-6 py-3">
+          <CheckCircle2 className="w-8 h-8" /> Керемет! «{targetWord}» — дұрыс!
+        </div>
       )}
     </div>
   );
@@ -335,7 +495,7 @@ export default function GamePage() {
       <main className="flex-1 max-w-5xl w-full mx-auto flex items-center justify-center relative z-10">
         <GlassCard strong className="w-full p-12 min-h-[600px] flex flex-col items-center justify-center">
            {id === 'ex-1' && <RepeatWordGame sound={sound} targetWord={data.repeatWord} onComplete={handleComplete} />}
-           {id === 'ex-2' && <BuildWordGame sound={sound} targetWord={data.buildWord} onComplete={handleComplete} />}
+           {id === 'ex-2' && <BuildWordGame targetWord={data.buildWord.text} emoji={data.buildWord.emoji} onComplete={handleComplete} />}
            {id === 'ex-3' && <BubblesGame sound={sound} onComplete={handleComplete} />}
            {id === 'ex-4' && <FindSoundGame sound={sound} words={data.findWords} onComplete={handleComplete} />}
         </GlassCard>

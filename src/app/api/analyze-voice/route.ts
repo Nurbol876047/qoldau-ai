@@ -19,43 +19,77 @@ export async function POST(request: Request) {
     const base64Audio = Buffer.from(arrayBuffer).toString('base64');
     const mimeType = audioFile.type || 'audio/webm';
 
-    // Use Gemini 1.5 Flash for fast multimodal processing
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-
+    const langName = lang === 'KZ' ? 'Kazakh' : 'Russian';
     const prompt = `
-      You are an expert speech-language pathologist evaluating a user pronouncing a word.
-      The user is trying to pronounce the target word: "${targetWord}" in ${lang === 'KZ' ? 'Kazakh' : 'Russian'}.
-      Listen to the audio carefully. Transcribe what the user actually said.
-      Evaluate if they pronounced the target word correctly.
-      Return the result strictly as a JSON object with this exact structure:
+      You are an expert speech-language pathologist assessing a CHILD who is learning to
+      pronounce a single word in ${langName}.
+      Target word: "${targetWord}".
+
+      Listen to the audio and:
+      1. Transcribe exactly what the child said (in ${langName} script, uppercase).
+      2. Decide whether the child said the target word and how clearly.
+      3. Be encouraging but honest: minor accent/childish softness is still "correct";
+         a clearly different word or missing key sounds is "incorrect".
+      4. If the audio is empty, silence, or just noise, set recognizedText to "" and accuracy 0.
+
+      Respond with ONLY this JSON (no markdown):
       {
-        "recognizedText": "what you heard",
-        "isCorrect": true/false,
-        "accuracy": a number from 0 to 100 representing how close the pronunciation is
+        "recognizedText": "string",
+        "isCorrect": boolean,
+        "accuracy": number  // 0-100, how close the pronunciation is to the target
       }
-      Do not include any other text, markdown formatting, or explanation. Just the raw JSON.
     `;
 
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          mimeType: mimeType,
-          data: base64Audio
-        }
-      },
-      prompt
-    ]);
+    // Try a few models with retry/backoff — Gemini free tier returns 503 under load.
+    const MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-3.5-flash", "gemini-flash-lite-latest"];
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-    const responseText = result.response.text();
-    // Clean the response text to ensure it's just JSON
-    const jsonStr = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
-    const data = JSON.parse(jsonStr);
+    let responseText = "";
+    let lastErr: any = null;
+    outer: for (const modelName of MODELS) {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: { responseMimeType: "application/json", temperature: 0 },
+      });
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const result = await model.generateContent([
+            { inlineData: { mimeType, data: base64Audio } },
+            prompt,
+          ]);
+          responseText = result.response.text();
+          break outer;
+        } catch (err: any) {
+          lastErr = err;
+          const status = err?.status ?? 0;
+          if (status === 503 || status === 429 || status === 500) {
+            await sleep(600 * (attempt + 1));
+            continue;
+          }
+          break; // non-retryable — move to next model
+        }
+      }
+    }
+
+    if (!responseText) throw lastErr || new Error("No response from model");
+    const jsonStr = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+    let data: { recognizedText?: string; isCorrect?: boolean; accuracy?: number };
+    try {
+      data = JSON.parse(jsonStr);
+    } catch {
+      const match = jsonStr.match(/\{[\s\S]*\}/);
+      if (!match) throw new Error(`Model returned non-JSON: ${jsonStr.slice(0, 200)}`);
+      data = JSON.parse(match[0]);
+    }
+
+    const accuracy = Math.max(0, Math.min(100, Number(data.accuracy) || 0));
 
     return NextResponse.json({
-      recognizedText: data.recognizedText,
+      recognizedText: data.recognizedText ?? '',
       targetWord,
-      isCorrect: data.isCorrect,
-      accuracy: data.accuracy
+      isCorrect: data.isCorrect ?? accuracy >= 60,
+      accuracy,
     });
   } catch (error: any) {
     console.error('Gemini STT API Error:', error);

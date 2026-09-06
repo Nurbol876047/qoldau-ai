@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Outfit, Inter } from "next/font/google";
+import { Outfit, Inter, Nunito } from "next/font/google";
 import "./globals.css";
 import React from "react";
 
@@ -11,6 +11,13 @@ const fontOutfit = Outfit({
 const fontInter = Inter({
   variable: "--font-inter",
   subsets: ["latin", "cyrillic"],
+});
+
+// Display / heading font — supports Cyrillic (Kazakh) and has a friendly, chunky look
+const fontDisplay = Nunito({
+  variable: "--font-display",
+  subsets: ["latin", "cyrillic"],
+  weight: ["600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
@@ -26,7 +33,7 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${fontOutfit.variable} ${fontInter.variable} h-full antialiased`}
+      className={`${fontOutfit.variable} ${fontInter.variable} ${fontDisplay.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

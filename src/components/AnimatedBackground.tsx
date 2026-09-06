@@ -146,7 +146,7 @@ export default function AnimatedBackground({ theme = "dark" }: AnimatedBackgroun
         vx: (Math.random() - 0.5) * 0.4,
         vy: (Math.random() - 0.5) * 0.4,
         color: bokehColors[Math.floor(Math.random() * bokehColors.length)],
-        alpha: isDark ? Math.random() * 0.12 + 0.06 : Math.random() * 0.18 + 0.08,
+        alpha: isDark ? Math.random() * 0.2 + 0.12 : Math.random() * 0.18 + 0.08,
         pulse: Math.random() * Math.PI * 2,
         pulseSpeed: 0.008 + Math.random() * 0.015,
       });
@@ -258,10 +258,39 @@ export default function AnimatedBackground({ theme = "dark" }: AnimatedBackgroun
         className="absolute inset-0"
         style={{
           background: isDark
-            ? "radial-gradient(ellipse 130% 90% at 50% -10%, #2a1060 0%, #12103a 25%, #0a0e2a 55%, #030510 100%)"
+            ? "radial-gradient(ellipse 140% 100% at 50% -15%, #3a1a80 0%, #1a1a5c 22%, #0a1146 45%, #060a24 72%, #02030f 100%)"
             : "radial-gradient(ellipse 110% 90% at 50% -5%, #dce8ff 0%, #eef4ff 25%, #f0e8ff 55%, #ffffff 100%)",
         }}
       />
+
+      {/* ── DARK: lab horizon / floor glow ── */}
+      {isDark && (
+        <>
+          <div
+            className="absolute left-0 right-0 bottom-0 h-[45%]"
+            style={{
+              background:
+                "linear-gradient(to top, rgba(55,214,255,0.16) 0%, rgba(60,120,255,0.10) 28%, rgba(139,123,255,0.05) 55%, transparent 100%)",
+              filter: "blur(6px)",
+            }}
+          />
+          <div
+            className="absolute left-1/2 bottom-[-18%] -translate-x-1/2 w-[85%] h-[42%] rounded-[50%] animate-glow-pulse"
+            style={{
+              background: "radial-gradient(ellipse at center, rgba(55,214,255,0.35) 0%, rgba(55,214,255,0.10) 40%, transparent 72%)",
+              filter: "blur(50px)",
+            }}
+          />
+          {/* central portal bloom */}
+          <div
+            className="absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 w-[620px] h-[620px] rounded-full animate-glow-pulse"
+            style={{
+              background: "radial-gradient(circle, rgba(255,207,58,0.14) 0%, rgba(55,214,255,0.12) 35%, transparent 70%)",
+              filter: "blur(40px)",
+            }}
+          />
+        </>
+      )}
 
       {/* ── DARK: Aurora layers ── */}
       {isDark && (
