@@ -16,7 +16,8 @@ const SYSTEM_INSTRUCTION = `
 - Ешқашан ұзақ лекция оқыма.
 `;
 
-const MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-3.5-flash"];
+// "-latest" aliases often hang or 503 under load, so the pinned model goes first.
+const MODELS = ["gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-flash-latest", "gemini-3.5-flash"];
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,30 +37,24 @@ export async function POST(req: NextRequest) {
       : [];
     contents.push({ role: "user", parts: [{ text }] });
 
-    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
     let reply = "";
     let lastErr: unknown = null;
 
-    outer: for (const modelName of MODELS) {
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        systemInstruction: SYSTEM_INSTRUCTION,
-        generationConfig: { temperature: 0.8, maxOutputTokens: 512 },
-      });
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const result = await model.generateContent({ contents });
-          reply = result.response.text().trim();
-          break outer;
-        } catch (err: any) {
-          lastErr = err;
-          const status = err?.status ?? 0;
-          if (status === 503 || status === 429 || status === 500) {
-            await sleep(500 * (attempt + 1));
-            continue;
-          }
-          break;
-        }
+    for (const modelName of MODELS) {
+      const model = genAI.getGenerativeModel(
+        {
+          model: modelName,
+          systemInstruction: SYSTEM_INSTRUCTION,
+          generationConfig: { temperature: 0.8, maxOutputTokens: 512 },
+        },
+        { timeout: 15000 },
+      );
+      try {
+        const result = await model.generateContent({ contents });
+        reply = result.response.text().trim();
+        break;
+      } catch (err: any) {
+        lastErr = err;
       }
     }
 

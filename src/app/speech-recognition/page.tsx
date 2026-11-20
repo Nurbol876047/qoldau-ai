@@ -226,7 +226,7 @@ export default function SpeechPracticePage() {
   );
 
   const processAudio = async () => {
-    const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+    const blob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current?.mimeType || "audio/webm" });
     if (blob.size < 1400) {
       setStatus("idle");
       return;

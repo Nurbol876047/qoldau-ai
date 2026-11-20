@@ -140,7 +140,7 @@ function RepeatWordGame({ sound, targetWord, onComplete }: { sound: string, targ
   const analyzeAudio = async () => {
     setStatus("analyzing");
     try {
-      const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+      const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current?.mimeType || "audio/webm" });
       if (audioBlob.size < 1200) {
         setStatus("error");
         setErrorMsg((prev) => prev || "Жазба тым қысқа. Қайта айтып көр.");

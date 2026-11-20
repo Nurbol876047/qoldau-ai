@@ -4,6 +4,24 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 // Initialize Gemini with the provided API key from environment variables
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
+const normalize = (s: string) => s.toUpperCase().replace(/Ё/g, 'Е').replace(/[^\p{L}]/gu, '');
+
+// 0–100: letter-level Levenshtein similarity between what was heard and the target.
+function similarity(heard: string, target: string): number {
+  const a = normalize(heard);
+  const b = normalize(target);
+  if (!a || !b) return 0;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return Math.round((1 - prev[b.length] / Math.max(a.length, b.length)) * 100);
+}
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
@@ -19,62 +37,49 @@ export async function POST(request: Request) {
     const base64Audio = Buffer.from(arrayBuffer).toString('base64');
     const mimeType = audioFile.type || 'audio/webm';
 
+    // The target word is deliberately NOT given to the model: when it knows the target,
+    // it "hears" that word regardless of what was said. Grading happens below in code.
     const langName = lang === 'KZ' ? 'Kazakh' : 'Russian';
     const prompt = `
-      You are an expert speech-language pathologist assessing a CHILD who is learning to
-      pronounce a single word in ${langName}.
-      Target word: "${targetWord}".
-
-      Listen to the audio and:
-      1. Transcribe exactly what the child said (in ${langName} script, uppercase).
-      2. Decide whether the child said the target word and how clearly.
-      3. Be encouraging but honest: minor accent/childish softness is still "correct";
-         a clearly different word or missing key sounds is "incorrect".
-      4. If the audio is empty, silence, or just noise, set recognizedText to "" and accuracy 0.
+      A child is saying ONE word in ${langName}. Transcribe exactly what you hear,
+      in ${langName} Cyrillic script, uppercase. Write the sounds actually pronounced —
+      do not correct them into a different word you think was intended.
+      If the audio is empty, silence, or just noise, return an empty string.
 
       Respond with ONLY this JSON (no markdown):
-      {
-        "recognizedText": "string",
-        "isCorrect": boolean,
-        "accuracy": number  // 0-100, how close the pronunciation is to the target
-      }
+      { "recognizedText": "string" }
     `;
 
-    // Try a few models with retry/backoff — Gemini free tier returns 503 under load.
-    const MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-3.5-flash", "gemini-flash-lite-latest"];
-    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+    // "-latest" aliases often hang or 503 under load, so the pinned model goes first
+    // and every call is time-boxed; on any failure fall through to the next model.
+    const MODELS = ["gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-flash-latest", "gemini-3.5-flash"];
 
     let responseText = "";
     let lastErr: any = null;
-    outer: for (const modelName of MODELS) {
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        generationConfig: { responseMimeType: "application/json", temperature: 0 },
-      });
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const result = await model.generateContent([
-            { inlineData: { mimeType, data: base64Audio } },
-            prompt,
-          ]);
-          responseText = result.response.text();
-          break outer;
-        } catch (err: any) {
-          lastErr = err;
-          const status = err?.status ?? 0;
-          if (status === 503 || status === 429 || status === 500) {
-            await sleep(600 * (attempt + 1));
-            continue;
-          }
-          break; // non-retryable — move to next model
-        }
+    for (const modelName of MODELS) {
+      const model = genAI.getGenerativeModel(
+        {
+          model: modelName,
+          generationConfig: { responseMimeType: "application/json", temperature: 0 },
+        },
+        { timeout: 15000 },
+      );
+      try {
+        const result = await model.generateContent([
+          { inlineData: { mimeType, data: base64Audio } },
+          prompt,
+        ]);
+        responseText = result.response.text();
+        break;
+      } catch (err: any) {
+        lastErr = err;
       }
     }
 
     if (!responseText) throw lastErr || new Error("No response from model");
     const jsonStr = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
 
-    let data: { recognizedText?: string; isCorrect?: boolean; accuracy?: number };
+    let data: { recognizedText?: string };
     try {
       data = JSON.parse(jsonStr);
     } catch {
@@ -83,12 +88,13 @@ export async function POST(request: Request) {
       data = JSON.parse(match[0]);
     }
 
-    const accuracy = Math.max(0, Math.min(100, Number(data.accuracy) || 0));
+    const recognizedText = (data.recognizedText ?? '').trim();
+    const accuracy = similarity(recognizedText, targetWord);
 
     return NextResponse.json({
-      recognizedText: data.recognizedText ?? '',
+      recognizedText,
       targetWord,
-      isCorrect: data.isCorrect ?? accuracy >= 60,
+      isCorrect: accuracy >= 60,
       accuracy,
     });
   } catch (error: any) {

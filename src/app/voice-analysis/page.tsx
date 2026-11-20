@@ -202,7 +202,7 @@ export default function VoiceAnalysisPage() {
   const stopRecording = () => {
     if (mediaRecorderRef.current && status === "recording") {
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current?.mimeType || 'audio/webm' });
         const url = URL.createObjectURL(audioBlob);
         setAudioUrl(url);
         
@@ -243,8 +243,8 @@ export default function VoiceAnalysisPage() {
     setStatus("analyzing");
     
     try {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      
+      const audioBlob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current?.mimeType || 'audio/webm' });
+
       const formData = new FormData();
       formData.append("audio", audioBlob);
       formData.append("targetWord", targetWord);

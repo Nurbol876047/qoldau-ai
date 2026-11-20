@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const MODELS = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-3.5-flash"];
+// "-latest" aliases often hang or 503 under load, so the pinned model goes first.
+const MODELS = ["gemini-2.5-flash", "gemini-flash-lite-latest", "gemini-flash-latest", "gemini-3.5-flash"];
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,29 +26,21 @@ export async function POST(req: NextRequest) {
       "мәтін ретінде қайтар. Ешқандай артық түсініктеме, тырнақша немесе белгі қоспа. " +
       "Егер ешнәрсе анық естілмесе, бос жол қайтар.";
 
-    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
     let text = "";
     let lastErr: unknown = null;
 
-    outer: for (const modelName of MODELS) {
-      const model = genAI.getGenerativeModel({ model: modelName });
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const result = await model.generateContent([
-            prompt,
-            { inlineData: { data: base64Audio, mimeType } },
-          ]);
-          text = result.response.text().trim().replace(/^["'«»]+|["'«»]+$/g, "");
-          break outer;
-        } catch (err: any) {
-          lastErr = err;
-          const status = err?.status ?? 0;
-          if (status === 503 || status === 429 || status === 500) {
-            await sleep(500 * (attempt + 1));
-            continue;
-          }
-          break;
-        }
+    for (const modelName of MODELS) {
+      const model = genAI.getGenerativeModel({ model: modelName }, { timeout: 15000 });
+      try {
+        const result = await model.generateContent([
+          prompt,
+          { inlineData: { data: base64Audio, mimeType } },
+        ]);
+        text = result.response.text().trim().replace(/^["'«»]+|["'«»]+$/g, "");
+        lastErr = null;
+        break;
+      } catch (err: any) {
+        lastErr = err;
       }
     }
 
